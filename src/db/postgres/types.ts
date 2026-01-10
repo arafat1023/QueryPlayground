@@ -9,15 +9,11 @@ export interface PostgresQueryResult {
   executionTime: number;
 }
 
+// Matches PGlite's Results.fields type
+// Note: This is simplified - PGlite only returns name and dataTypeID in query results
 export interface PostgresField {
   name: string;
   dataTypeID: number;
-  dataTypeSize: number;
-  dataTypeModifier: number;
-  format: string;
-  schema: string;
-  table: string;
-  column: number;
 }
 
 export interface PostgresTableSchema {

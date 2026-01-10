@@ -6,8 +6,8 @@ export interface DatabaseType {
 
 export interface QueryResult {
   success: boolean;
-  rows?: any[];
-  fields?: any[];
+  rows?: unknown[];
+  fields?: unknown[];
   rowCount?: number;
   error?: string;
   executionTime: number;

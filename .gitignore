@@ -78,3 +78,10 @@ vite.config.d.ts
 # OS
 Thumbs.db
 /.claude/
+
+# Documentation (kept in main branch only)
+CLAUDE.md
+auto_commit.md
+auto_commit_plan
+auto_prompt
+queryplayground-branching-strategy.md

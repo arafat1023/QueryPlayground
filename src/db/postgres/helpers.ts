@@ -77,7 +77,8 @@ export async function getTableList(): Promise<string[]> {
     }
 
     return [];
-  } catch {
+  } catch (err) {
+    console.error('Failed to get table list:', err);
     return [];
   }
 }
@@ -88,6 +89,9 @@ export async function getTableList(): Promise<string[]> {
  * @returns Promise resolving to table schema
  */
 export async function getTableSchema(tableName: string): Promise<PostgresTableSchema | null> {
+  const { quoteIdentifier } = await import('./client');
+  const quotedTableName = quoteIdentifier(tableName);
+
   const query = `
     SELECT
       column_name,
@@ -121,13 +125,13 @@ export async function getTableSchema(tableName: string): Promise<PostgresTableSc
         ELSE false
       END as is_foreign_key
     FROM information_schema.columns columns
-    WHERE table_name = $1
+    WHERE table_name = ${quotedTableName}
     ORDER BY ordinal_position;
   `;
 
   try {
     const { executePostgresQuery } = await import('./client');
-    const result = await executePostgresQuery(query.replace('$1', `'${tableName}'`));
+    const result = await executePostgresQuery(query);
 
     if (result.success && result.rows && result.rows.length > 0) {
       return {
@@ -147,7 +151,8 @@ export async function getTableSchema(tableName: string): Promise<PostgresTableSc
     }
 
     return null;
-  } catch {
+  } catch (err) {
+    console.error(`Failed to get schema for table ${tableName}:`, err);
     return null;
   }
 }
@@ -158,7 +163,10 @@ export async function getTableSchema(tableName: string): Promise<PostgresTableSc
  * @returns Promise resolving to row count
  */
 export async function getTableRowCount(tableName: string): Promise<number> {
-  const query = `SELECT COUNT(*) as count FROM "${tableName}";`;
+  const { quoteIdentifier } = await import('./client');
+  const quotedTableName = quoteIdentifier(tableName);
+
+  const query = `SELECT COUNT(*) as count FROM ${quotedTableName};`;
 
   try {
     const { executePostgresQuery } = await import('./client');
@@ -169,7 +177,8 @@ export async function getTableRowCount(tableName: string): Promise<number> {
     }
 
     return 0;
-  } catch {
+  } catch (err) {
+    console.error(`Failed to get row count for table ${tableName}:`, err);
     return 0;
   }
 }

@@ -49,21 +49,25 @@ export async function getPostgresClient(): Promise<PGlite> {
 /**
  * Execute a PostgreSQL query
  * @param sql - The SQL query to execute
+ * @param params - Optional query parameters for parameterized queries
  * @returns QueryResult with rows, fields, execution time, or error
  */
-export async function executePostgresQuery(sql: string): Promise<PostgresQueryResult> {
+export async function executePostgresQuery(
+  sql: string,
+  params: unknown[] = []
+): Promise<PostgresQueryResult> {
   const start = performance.now();
 
   try {
     const client = await getPostgresClient();
-    const result = await client.query(sql);
+    const result = await client.query(sql, params);
 
     const executionTime = performance.now() - start;
 
     return {
       success: true,
       rows: result.rows,
-      fields: result.fields as PostgresQueryResult['fields'],
+      fields: result.fields,
       rowCount: result.rows.length,
       executionTime,
     };
@@ -76,6 +80,16 @@ export async function executePostgresQuery(sql: string): Promise<PostgresQueryRe
       executionTime,
     };
   }
+}
+
+/**
+ * Quote a SQL identifier (table name, column name, etc.) to prevent SQL injection
+ * @param identifier - The identifier to quote
+ * @returns Quoted identifier safe for use in SQL queries
+ */
+export function quoteIdentifier(identifier: string): string {
+  // Double quote the identifier and escape any internal double quotes
+  return `"${identifier.replace(/"/g, '""')}"`;
 }
 
 /**

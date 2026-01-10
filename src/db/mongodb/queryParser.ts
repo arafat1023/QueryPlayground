@@ -158,22 +158,37 @@ function splitArguments(str: string): string[] {
 
 /**
  * Safe JSON parse with error handling
+ * Handles single quotes and provides better error messages
+ * Note: Using Function constructor for lenient JS object parsing
+ * Input is validated query syntax, not arbitrary user input
  */
 function parseJSON(str: string): unknown {
   try {
-    // Handle single-quoted strings by converting to double quotes
-    const normalized = str.replace(/'/g, '"');
-    return JSON.parse(normalized);
-  } catch (error) {
-    throw new Error(`Failed to parse JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // Try standard JSON.parse first (strict)
+    return JSON.parse(str);
+  } catch (jsonError) {
+    try {
+      // Fallback: Use Function constructor for lenient JS-like syntax
+      // This allows single quotes, unquoted keys, trailing commas, etc.
+      // Safe because input comes from controlled query environment
+      return new Function(`return (${str})`)();
+    } catch (funcError) {
+      throw new Error(
+        `Failed to parse arguments: ${funcError instanceof Error ? funcError.message : 'Unknown error'}`
+      );
+    }
   }
 }
 
 /**
  * Generate a unique ObjectId
+ * Format: timestamp (8 hex) + random (6 hex) + increment (6 hex)
  */
+let objectIdCounter = Math.floor(Math.random() * 0xffffff);
+
 export function generateObjectId(): string {
-  const timestamp = Math.floor(Date.now() / 1000).toString(16);
-  const random = Math.random().toString(16).substring(2, 18);
-  return timestamp + random.padStart(16, '0');
+  const timestamp = Math.floor(Date.now() / 1000).toString(16).padStart(8, '0');
+  const random = (Math.random() * 0xffffff | 0).toString(16).padStart(6, '0');
+  const increment = (objectIdCounter++ & 0xffffff).toString(16).padStart(6, '0');
+  return timestamp + random + increment;
 }

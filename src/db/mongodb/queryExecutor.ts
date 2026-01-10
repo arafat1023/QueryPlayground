@@ -26,27 +26,12 @@ export function find(
   const collection = getCollection(collectionName);
   const query = new Query(filter);
 
-  let cursor = query.find(collection);
+  // Mingo supports projection as the second argument to find()
+  let cursor = query.find(collection, options?.projection);
 
   // Apply sort
   if (options?.sort) {
     cursor = cursor.sort(options.sort);
-  }
-
-  // Apply projection
-  if (options?.projection) {
-    // Projection is handled by Mingo internally
-    // We need to use a different approach for projection
-    const projected = cursor.all() as MongoDocument[];
-    return projected.map((doc) => {
-      const result: MongoDocument = { _id: doc._id };
-      Object.keys(options.projection || {}).forEach((key) => {
-        if (key in doc) {
-          result[key] = doc[key];
-        }
-      });
-      return result;
-    });
   }
 
   // Apply skip
@@ -124,7 +109,7 @@ export function update(
   let modifiedCount = 0;
 
   // Update each matching document
-  matches.forEach((doc) => {
+  for (const doc of matches) {
     const document = doc as MongoDocument;
     let updated = false;
 
@@ -199,10 +184,9 @@ export function update(
 
     // If not multi, only update first match
     if (!options?.multi) {
-      return true;
+      break;
     }
-    return false;
-  });
+  }
 
   return { matchedCount, modifiedCount };
 }
@@ -218,23 +202,34 @@ export function deleteDocs(
   const collection = getCollection(collectionName);
   const query = new Query(filter);
 
-  const matches = query.find(collection).all();
-  const deletedCount = options?.multi ? matches.length : Math.min(1, matches.length);
+  if (options?.multi) {
+    // Find all matches and remove them
+    const matches = query.find(collection).all();
+    matches.forEach((doc) => {
+      const index = collection.indexOf(doc as MongoDocument);
+      if (index > -1) {
+        collection.splice(index, 1);
+      }
+    });
+    return { deletedCount: matches.length };
+  }
 
-  // Remove documents from collection
-  const toDelete = options?.multi ? matches : matches.slice(0, 1);
-  toDelete.forEach((doc) => {
-    const index = collection.indexOf(doc as MongoDocument);
+  // Single document deletion - find first match and remove it
+  const match = query.find(collection).next();
+  if (match) {
+    const index = collection.indexOf(match as MongoDocument);
     if (index > -1) {
       collection.splice(index, 1);
+      return { deletedCount: 1 };
     }
-  });
+  }
 
-  return { deletedCount };
+  return { deletedCount: 0 };
 }
 
 /**
  * Count documents matching the filter
+ * Note: Mingo doesn't have a native count method, so we use .all().length
  */
 export function countDocuments(
   collectionName: string,
@@ -242,7 +237,7 @@ export function countDocuments(
 ): number {
   const collection = getCollection(collectionName);
   const query = new Query(filter);
-  return query.find(collection).all().length as number;
+  return query.find(collection).all().length;
 }
 
 /**

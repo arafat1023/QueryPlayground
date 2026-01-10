@@ -36,13 +36,11 @@ export interface FindOptions {
   skip?: number;
 }
 
-// Update operators
+// Update operators (only implemented operators are included)
 export interface UpdateOperators {
   $set?: Record<string, unknown>;
   $unset?: Record<string, string | number>;
   $inc?: Record<string, number>;
-  $push?: Record<string, unknown>;
-  $pull?: Record<string, unknown>;
   $mul?: Record<string, number>;
   $min?: Record<string, unknown>;
   $max?: Record<string, unknown>;

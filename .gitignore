@@ -83,7 +83,9 @@ Thumbs.db
 CLAUDE.md
 auto_commit.md
 auto_commit_plan
+auto_commit_plan.json
 auto_prompt
 auto_commit.sh
 auto_commit_prompt
+auto_commit_prompt.md
 queryplayground-branching-strategy.md

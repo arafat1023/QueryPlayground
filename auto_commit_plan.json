@@ -1,0 +1,24 @@
+{
+  "commits": [
+    {
+      "message": "feat: add auto-commit plan for project initialization",
+      "files": ["auto_commit_plan.json"],
+      "description": "Introduces `auto_commit_plan.json` to define the structured sequence of commits for the initial project setup. This plan serves as a guide for the auto-commit system."
+    },
+    {
+      "message": "chore: update ESLint configuration",
+      "files": ["eslint.config.js"],
+      "description": "Integrates `eslint-config-prettier` to ensure compatibility between ESLint and Prettier. Updates React version detection to 'detect' for improved flexibility."
+    },
+    {
+      "message": "build: refactor Vite path resolution for ESM",
+      "files": ["vite.config.js", "vite.config.ts"],
+      "description": "Updates Vite configuration to use `fileURLToPath` and `URL` for alias resolution, aligning with modern ESM practices and Node.js environments."
+    },
+    {
+      "message": "refactor: improve QueryResult type safety",
+      "files": ["src/types/index.ts"],
+      "description": "Changes `any[]` to `unknown[]` for `rows` and `fields` in the `QueryResult` interface, enforcing stricter type checking and safer data handling."
+    }
+  ]
+}

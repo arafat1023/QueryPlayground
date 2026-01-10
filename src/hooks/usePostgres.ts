@@ -72,8 +72,7 @@ export function usePostgres(): UsePostgresReturn {
     };
 
     init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialize]);
 
   return {
     isReady,

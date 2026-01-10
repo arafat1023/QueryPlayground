@@ -71,6 +71,10 @@ coverage/
 # Vite
 .vite
 
+# TypeScript
+*.tsbuildinfo
+vite.config.d.ts
+
 # OS
 Thumbs.db
 /.claude/

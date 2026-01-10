@@ -49,6 +49,7 @@
     "@electric-sql/pglite": "^0.3.14",
     "@tanstack/react-table": "^8.21.3",
     "lucide-react": "^0.562.0",
+    "mingo": "^7.1.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-resizable-panels": "^4.3.3",

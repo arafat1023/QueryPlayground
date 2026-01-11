@@ -1,31 +1,38 @@
 import { usePostgres } from './hooks/usePostgres';
 import { useMongoDB } from './hooks/useMongoDB';
 import { useState } from 'react';
+import { QueryEditor } from './components/editor/QueryEditor';
+import { EditorToolbar } from './components/editor/EditorToolbar';
+import { useEditorStore } from './store/editorStore';
 
 function App() {
   const { isReady: pgReady, isLoading: pgLoading, error: pgError, executeQuery: executePgQuery } =
     usePostgres();
   const { isReady: mongoReady, error: mongoError, executeQuery: executeMongoQuery } = useMongoDB();
 
+  const { content, setContent, setDefaultQuery } = useEditorStore();
   const [activeDb, setActiveDb] = useState<'postgresql' | 'mongodb'>('postgresql');
-  const [query, setQuery] = useState(
-    activeDb === 'postgresql' ? 'SELECT 1 + 1 AS result' : 'db.users.find({})'
-  );
   const [result, setResult] = useState<string>('');
+  const [isRunning, setIsRunning] = useState(false);
 
   const runTest = async () => {
-    const queryResult =
-      activeDb === 'postgresql' ? await executePgQuery(query) : await executeMongoQuery(query);
-    if (queryResult.success) {
-      setResult(JSON.stringify(queryResult, null, 2));
-    } else {
-      setResult(`Error: ${queryResult.error}`);
+    setIsRunning(true);
+    try {
+      const queryResult =
+        activeDb === 'postgresql' ? await executePgQuery(content) : await executeMongoQuery(content);
+      if (queryResult.success) {
+        setResult(JSON.stringify(queryResult, null, 2));
+      } else {
+        setResult(`Error: ${queryResult.error}`);
+      }
+    } finally {
+      setIsRunning(false);
     }
   };
 
   const handleDbSwitch = (db: 'postgresql' | 'mongodb') => {
     setActiveDb(db);
-    setQuery(db === 'postgresql' ? 'SELECT 1 + 1 AS result' : 'db.users.find({})');
+    setDefaultQuery(db);
     setResult('');
   };
 
@@ -96,22 +103,22 @@ function App() {
         {/* Query Test */}
         {(activeDb === 'postgresql' ? pgReady : mongoReady) && (
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Test Query</h2>
+            <h2 className="text-xl font-semibold mb-4">Query Editor</h2>
             <div className="space-y-4">
-              <textarea
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="w-full h-32 p-3 border border-gray-300 rounded-lg font-mono text-sm"
-                placeholder={
-                  activeDb === 'postgresql' ? 'Enter SQL query...' : 'Enter MongoDB query...'
-                }
+              <QueryEditor
+                mode={activeDb}
+                value={content}
+                onChange={setContent}
+                onRun={runTest}
+                readOnly={isRunning}
+                height="300px"
               />
-              <button
-                onClick={runTest}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Run Query
-              </button>
+              <EditorToolbar
+                onRun={runTest}
+                onClear={() => setContent('')}
+                mode={activeDb}
+                isRunning={isRunning}
+              />
               {result && (
                 <pre className="bg-gray-900 text-green-400 p-4 rounded-lg overflow-auto text-sm">
                   {result}

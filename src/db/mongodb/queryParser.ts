@@ -166,7 +166,7 @@ function parseJSON(str: string): unknown {
   try {
     // Try standard JSON.parse first (strict)
     return JSON.parse(str);
-  } catch (jsonError) {
+  } catch {
     try {
       // Fallback: Use Function constructor for lenient JS-like syntax
       // This allows single quotes, unquoted keys, trailing commas, etc.

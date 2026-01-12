@@ -98,7 +98,7 @@ export async function getTableList(): Promise<string[]> {
         const tables = result.rows.map((row: unknown) => (row as { tablename: string }).tablename);
         return tables;
       }
-    } catch (err) {
+    } catch {
       // Try next approach
       continue;
     }

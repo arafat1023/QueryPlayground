@@ -9,10 +9,9 @@ interface HeaderProps {
 }
 
 export function Header({onDatabaseChange}: HeaderProps) {
-  const {activeDatabase, setActiveDatabase, toggleSidebar} = useUIStore();
+  const {activeDatabase, toggleSidebar} = useUIStore();
 
   const handleDatabaseSwitch = (db: DatabaseMode) => {
-    setActiveDatabase(db);
     onDatabaseChange?.(db);
   };
 

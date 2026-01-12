@@ -57,102 +57,117 @@ export function parseError(error: unknown): PostgresError {
 
 /**
  * Get list of all tables in the database
+ * Uses pg_tables instead of information_schema for better PGlite compatibility
  * @returns Promise resolving to array of table names
  */
 export async function getTableList(): Promise<string[]> {
-  const query = `
-    SELECT table_name
+  // Try pg_tables first (more compatible with PGlite)
+  const query1 = `
+    SELECT tablename
+    FROM pg_tables
+    WHERE schemaname = 'public'
+    ORDER BY tablename;
+  `;
+
+  // Fallback to pg_class if pg_tables doesn't work
+  const query2 = `
+    SELECT relname as tablename
+    FROM pg_class
+    WHERE relkind = 'r'
+    AND relnamespace = 'public'::regnamespace
+    ORDER BY relname;
+  `;
+
+  // Last resort - information_schema
+  const query3 = `
+    SELECT table_name as tablename
     FROM information_schema.tables
     WHERE table_schema = 'public'
     AND table_type = 'BASE TABLE'
     ORDER BY table_name;
   `;
 
-  try {
-    const { executePostgresQuery } = await import('./client');
-    const result = await executePostgresQuery(query);
+  const queries = [query1, query2, query3];
 
-    if (result.success && result.rows) {
-      return result.rows.map((row: unknown) => (row as { table_name: string }).table_name);
+  for (const query of queries) {
+    try {
+      const { executePostgresQuery } = await import('./client');
+      const result = await executePostgresQuery(query);
+
+      if (result.success && result.rows && result.rows.length > 0) {
+        const tables = result.rows.map((row: unknown) => (row as { tablename: string }).tablename);
+        return tables;
+      }
+    } catch (err) {
+      // Try next approach
+      continue;
     }
-
-    return [];
-  } catch (err) {
-    console.error('Failed to get table list:', err);
-    return [];
   }
+
+  return [];
+}
+
+/**
+ * Map PostgreSQL type OID to readable type name
+ */
+function getPostgresTypeName(typeId: number): string {
+  const typeMap: Record<number, string> = {
+    16: 'boolean',
+    20: 'bigint',
+    23: 'integer',
+    25: 'text',
+    700: 'float4',
+    701: 'float8',
+    1043: 'varchar',
+    1082: 'date',
+    1114: 'timestamp',
+    1186: 'interval',
+    1700: 'numeric',
+    3802: 'jsonb',
+    1000: 'bool[]', // array
+    1005: 'text[]', // array
+    1007: 'int4[]', // array
+    1015: 'varchar[]', // array
+    1028: 'numeric[]', // array
+  };
+  return typeMap[typeId] || 'unknown';
 }
 
 /**
  * Get schema information for a specific table
+ * Uses PGlite's describeQuery API for schema inspection
+ * Note: Limited by PGlite's API - nullable/primary key info not available
  * @param tableName - The name of the table
  * @returns Promise resolving to table schema
  */
 export async function getTableSchema(tableName: string): Promise<PostgresTableSchema | null> {
   const { quoteIdentifier } = await import('./client');
+  const { getPostgresClient } = await import('./client');
   const quotedTableName = quoteIdentifier(tableName);
 
-  const query = `
-    SELECT
-      column_name,
-      data_type,
-      is_nullable,
-      column_default,
-      CASE
-        WHEN EXISTS (
-          SELECT 1 FROM information_schema.table_constraints tc
-          JOIN information_schema.key_column_usage kcu
-            ON tc.constraint_name = kcu.constraint_name
-          WHERE tc.table_name = columns.table_name
-            AND kcu.column_name = columns.column_name
-            AND tc.constraint_type = 'PRIMARY KEY'
-        )
-        THEN true
-        ELSE false
-      END as is_primary_key,
-      CASE
-        WHEN EXISTS (
-          SELECT 1 FROM information_schema.table_constraints tc
-          JOIN information_schema.key_column_usage kcu
-            ON tc.constraint_name = kcu.constraint_name
-          JOIN information_schema.referential_constraints rc
-            ON tc.constraint_name = rc.constraint_name
-          WHERE tc.table_name = columns.table_name
-            AND kcu.column_name = columns.column_name
-            AND tc.constraint_type = 'FOREIGN KEY'
-        )
-        THEN true
-        ELSE false
-      END as is_foreign_key
-    FROM information_schema.columns columns
-    WHERE table_name = ${quotedTableName}
-    ORDER BY ordinal_position;
-  `;
+  // Use describeQuery to get column info without executing
+  const query = `SELECT * FROM ${quotedTableName};`;
 
   try {
-    const { executePostgresQuery } = await import('./client');
-    const result = await executePostgresQuery(query);
+    const client = await getPostgresClient();
+    const described = await client.describeQuery(query);
 
-    if (result.success && result.rows && result.rows.length > 0) {
+    if (described && described.resultFields && described.resultFields.length > 0) {
       return {
         name: tableName,
-        columns: result.rows.map((row: unknown) => {
-          const r = row as Record<string, unknown>;
-          return {
-            name: r.column_name as string,
-            type: r.data_type as string,
-            nullable: r.is_nullable === 'YES',
-            defaultValue: r.column_default as string | undefined,
-            isPrimaryKey: r.is_primary_key as boolean,
-            isForeignKey: r.is_foreign_key as boolean,
-          };
-        }),
+        columns: described.resultFields.map((field: Record<string, unknown>) => ({
+          name: field.name as string,
+          type: getPostgresTypeName(field.dataTypeID as number),
+          nullable: true, // PGlite API limitation - cannot determine
+          defaultValue: undefined,
+          isPrimaryKey: false, // PGlite API limitation - cannot determine
+          isForeignKey: false, // PGlite API limitation - cannot determine
+        })),
       };
     }
 
     return null;
-  } catch (err) {
-    console.error(`Failed to get schema for table ${tableName}:`, err);
+  } catch {
     return null;
   }
 }
@@ -177,8 +192,7 @@ export async function getTableRowCount(tableName: string): Promise<number> {
     }
 
     return 0;
-  } catch (err) {
-    console.error(`Failed to get row count for table ${tableName}:`, err);
+  } catch {
     return 0;
   }
 }

@@ -57,76 +57,98 @@ export function parseError(error: unknown): PostgresError {
 
 /**
  * Get list of all tables in the database
+ * Uses pg_tables instead of information_schema for better PGlite compatibility
  * @returns Promise resolving to array of table names
  */
 export async function getTableList(): Promise<string[]> {
-  const query = `
-    SELECT table_name
+  // Try pg_tables first (more compatible with PGlite)
+  const query1 = `
+    SELECT tablename
+    FROM pg_tables
+    WHERE schemaname = 'public'
+    ORDER BY tablename;
+  `;
+
+  // Fallback to pg_class if pg_tables doesn't work
+  const query2 = `
+    SELECT relname as tablename
+    FROM pg_class
+    WHERE relkind = 'r'
+    AND relnamespace = 'public'::regnamespace
+    ORDER BY relname;
+  `;
+
+  // Last resort - information_schema
+  const query3 = `
+    SELECT table_name as tablename
     FROM information_schema.tables
     WHERE table_schema = 'public'
     AND table_type = 'BASE TABLE'
     ORDER BY table_name;
   `;
 
-  try {
-    const { executePostgresQuery } = await import('./client');
-    const result = await executePostgresQuery(query);
+  const queries = [query1, query2, query3];
 
-    if (result.success && result.rows) {
-      return result.rows.map((row: unknown) => (row as { table_name: string }).table_name);
+  for (const query of queries) {
+    try {
+      const { executePostgresQuery } = await import('./client');
+      const result = await executePostgresQuery(query);
+
+      if (result.success && result.rows && result.rows.length > 0) {
+        const tables = result.rows.map((row: unknown) => (row as { tablename: string }).tablename);
+        return tables;
+      }
+    } catch {
+      // Try next approach
+      continue;
     }
-
-    return [];
-  } catch (err) {
-    console.error('Failed to get table list:', err);
-    return [];
   }
+
+  return [];
 }
 
 /**
- * Get schema information for a specific table
- * @param tableName - The name of the table
- * @returns Promise resolving to table schema
+ * Map PostgreSQL type OID to readable type name
  */
-export async function getTableSchema(tableName: string): Promise<PostgresTableSchema | null> {
+function getPostgresTypeName(typeId: number): string {
+  const typeMap: Record<number, string> = {
+    16: 'boolean',
+    20: 'bigint',
+    23: 'integer',
+    25: 'text',
+    700: 'float4',
+    701: 'float8',
+    1043: 'varchar',
+    1082: 'date',
+    1114: 'timestamp',
+    1186: 'interval',
+    1700: 'numeric',
+    3802: 'jsonb',
+    1000: 'bool[]', // array
+    1005: 'text[]', // array
+    1007: 'int4[]', // array
+    1015: 'varchar[]', // array
+    1028: 'numeric[]', // array
+  };
+  return typeMap[typeId] || 'unknown';
+}
+
+/**
+ * Get primary key columns for a table using pg_constraint
+ * @param tableName - The name of the table
+ * @returns Promise resolving to set of primary key column names
+ */
+async function getPrimaryKeys(tableName: string): Promise<Set<string>> {
   const { quoteIdentifier } = await import('./client');
   const quotedTableName = quoteIdentifier(tableName);
 
+  // Query pg_constraint to get primary key information
   const query = `
-    SELECT
-      column_name,
-      data_type,
-      is_nullable,
-      column_default,
-      CASE
-        WHEN EXISTS (
-          SELECT 1 FROM information_schema.table_constraints tc
-          JOIN information_schema.key_column_usage kcu
-            ON tc.constraint_name = kcu.constraint_name
-          WHERE tc.table_name = columns.table_name
-            AND kcu.column_name = columns.column_name
-            AND tc.constraint_type = 'PRIMARY KEY'
-        )
-        THEN true
-        ELSE false
-      END as is_primary_key,
-      CASE
-        WHEN EXISTS (
-          SELECT 1 FROM information_schema.table_constraints tc
-          JOIN information_schema.key_column_usage kcu
-            ON tc.constraint_name = kcu.constraint_name
-          JOIN information_schema.referential_constraints rc
-            ON tc.constraint_name = rc.constraint_name
-          WHERE tc.table_name = columns.table_name
-            AND kcu.column_name = columns.column_name
-            AND tc.constraint_type = 'FOREIGN KEY'
-        )
-        THEN true
-        ELSE false
-      END as is_foreign_key
-    FROM information_schema.columns columns
-    WHERE table_name = ${quotedTableName}
-    ORDER BY ordinal_position;
+    SELECT a.attname AS column_name
+    FROM pg_constraint c
+    JOIN pg_attribute a ON a.attnum = ANY(c.conkey) AND a.attrelid = c.conrelid
+    WHERE c.contype = 'p'
+    AND c.conrelid = ${quotedTableName}::regclass;
   `;
 
   try {
@@ -134,17 +156,140 @@ export async function getTableSchema(tableName: string): Promise<PostgresTableSc
     const result = await executePostgresQuery(query);
 
     if (result.success && result.rows && result.rows.length > 0) {
+      const pkColumns = new Set<string>();
+      for (const row of result.rows) {
+        pkColumns.add((row as { column_name: string }).column_name);
+      }
+      return pkColumns;
+    }
+  } catch {
+    // Silently fail if pg_constraint is not available
+  }
+
+  return new Set<string>();
+}
+
+/**
+ * Get foreign key columns for a table using pg_constraint
+ * @param tableName - The name of the table
+ * @returns Promise resolving to map of foreign key column names to their referenced table/column
+ */
+async function getForeignKeys(tableName: string): Promise<Map<string, { table: string; column: string }>> {
+  const { quoteIdentifier } = await import('./client');
+  const quotedTableName = quoteIdentifier(tableName);
+
+  // Query pg_constraint to get foreign key information
+  const query = `
+    SELECT
+      a.attname AS column_name,
+      confrelid::regclass AS references_table,
+      af.attname AS references_column
+    FROM pg_constraint c
+    JOIN pg_attribute a ON a.attnum = ANY(c.conkey) AND a.attrelid = c.conrelid
+    JOIN pg_attribute af ON af.attnum = ANY(c.confkey) AND af.attrelid = c.confrelid
+    WHERE c.contype = 'f'
+    AND c.conrelid = ${quotedTableName}::regclass;
+  `;
+
+  try {
+    const { executePostgresQuery } = await import('./client');
+    const result = await executePostgresQuery(query);
+
+    if (result.success && result.rows && result.rows.length > 0) {
+      const fkColumns = new Map<string, { table: string; column: string }>();
+      for (const row of result.rows) {
+        const fk = row as { column_name: string; references_table: string; references_column: string };
+        fkColumns.set(fk.column_name, { table: fk.references_table, column: fk.references_column });
+      }
+      return fkColumns;
+    }
+  } catch {
+    // Silently fail if pg_constraint is not available
+  }
+
+  return new Map();
+}
+
+/**
+ * Get nullable (NOT NULL) columns for a table using pg_attribute
+ * @param tableName - The name of the table
+ * @returns Promise resolving to set of nullable column names
+ */
+async function getNullableColumns(tableName: string): Promise<Set<string>> {
+  const { quoteIdentifier } = await import('./client');
+  const quotedTableName = quoteIdentifier(tableName);
+
+  // Query pg_attribute to get NOT NULL information
+  const query = `
+    SELECT a.attname AS column_name
+    FROM pg_attribute a
+    JOIN pg_class c ON c.oid = a.attrelid
+    WHERE c.relname = ${quotedTableName}
+    AND a.attnum > 0
+    AND NOT a.attisdropped
+    AND a.attnotnull = false;
+  `;
+
+  try {
+    const { executePostgresQuery } = await import('./client');
+    const result = await executePostgresQuery(query);
+
+    if (result.success && result.rows && result.rows.length > 0) {
+      const nullableColumns = new Set<string>();
+      for (const row of result.rows) {
+        nullableColumns.add((row as { column_name: string }).column_name);
+      }
+      return nullableColumns;
+    }
+  } catch {
+    // Silently fail if pg_attribute is not available
+  }
+
+  // Default to all columns being nullable if query fails
+  return new Set<string>();
+}
+
+/**
+ * Get schema information for a specific table
+ * Uses PGlite's describeQuery API for column info, then augments with
+ * PK/FK/nullable information from PostgreSQL system catalogs
+ * @param tableName - The name of the table
+ * @returns Promise resolving to table schema
+ */
+export async function getTableSchema(tableName: string): Promise<PostgresTableSchema | null> {
+  const { quoteIdentifier } = await import('./client');
+  const { getPostgresClient } = await import('./client');
+  const quotedTableName = quoteIdentifier(tableName);
+
+  // Use describeQuery to get column info without executing
+  const query = `SELECT * FROM ${quotedTableName};`;
+
+  try {
+    const client = await getPostgresClient();
+    const described = await client.describeQuery(query);
+
+    if (described && described.resultFields && described.resultFields.length > 0) {
+      // Fetch constraint information in parallel
+      const [primaryKeys, foreignKeys, nullableColumns] = await Promise.all([
+        getPrimaryKeys(tableName),
+        getForeignKeys(tableName),
+        getNullableColumns(tableName),
+      ]);
+
       return {
         name: tableName,
-        columns: result.rows.map((row: unknown) => {
-          const r = row as Record<string, unknown>;
+        columns: described.resultFields.map((field: Record<string, unknown>) => {
+          const columnName = field.name as string;
+          const fkInfo = foreignKeys.get(columnName);
+
           return {
-            name: r.column_name as string,
-            type: r.data_type as string,
-            nullable: r.is_nullable === 'YES',
-            defaultValue: r.column_default as string | undefined,
-            isPrimaryKey: r.is_primary_key as boolean,
-            isForeignKey: r.is_foreign_key as boolean,
+            name: columnName,
+            type: getPostgresTypeName(field.dataTypeID as number),
+            nullable: nullableColumns.has(columnName),
+            defaultValue: undefined,
+            isPrimaryKey: primaryKeys.has(columnName),
+            isForeignKey: foreignKeys.has(columnName),
+            references: fkInfo,
           };
         }),
       };

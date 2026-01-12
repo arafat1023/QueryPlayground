@@ -296,7 +296,8 @@ export async function getTableSchema(tableName: string): Promise<PostgresTableSc
     }
 
     return null;
-  } catch {
+  } catch (err) {
+    console.error(`Failed to get schema for table ${tableName}:`, err);
     return null;
   }
 }
@@ -321,7 +322,8 @@ export async function getTableRowCount(tableName: string): Promise<number> {
     }
 
     return 0;
-  } catch {
+  } catch (err) {
+    console.error(`Failed to get row count for table ${tableName}:`, err);
     return 0;
   }
 }

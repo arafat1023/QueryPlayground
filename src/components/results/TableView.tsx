@@ -3,6 +3,7 @@ import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
+  getPaginationRowModel,
   flexRender,
   createColumnHelper,
   type SortingState,
@@ -25,8 +26,6 @@ type ResultRow = Record<string, unknown>;
  */
 export function TableView({ rows, onRowClick }: TableViewProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [pageSize, setPageSize] = useState(50);
-  const [pageIndex, setPageIndex] = useState(0);
 
   // Generate columns dynamically from first row
   const columns = useMemo(() => {
@@ -43,28 +42,23 @@ export function TableView({ rows, onRowClick }: TableViewProps) {
     ) as ColumnDef<ResultRow, unknown>[];
   }, [rows]);
 
-  // Table instance with sorting
+  // Table instance with sorting and pagination
   const table = useReactTable({
     data: rows as ResultRow[],
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     state: {
       sorting,
-      pagination: {
-        pageIndex,
-        pageSize,
-      },
     },
     onSortingChange: setSorting,
-    pageCount: Math.ceil(rows.length / pageSize),
-    manualPagination: true,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 50,
+      },
+    },
   });
-
-  const paginatedRows = useMemo(() => {
-    const start = pageIndex * pageSize;
-    return rows.slice(start, start + pageSize);
-  }, [rows, pageIndex, pageSize]);
 
   const handleCopyCell = async (value: string, columnName: string) => {
     const success = await copyToClipboard(value);
@@ -93,6 +87,7 @@ export function TableView({ rows, onRowClick }: TableViewProps) {
     );
   }
 
+  const { pageIndex, pageSize } = table.getState().pagination;
   const totalRows = rows.length;
   const startRow = pageIndex * pageSize + 1;
   const endRow = Math.min(startRow + pageSize - 1, totalRows);
@@ -108,29 +103,29 @@ export function TableView({ rows, onRowClick }: TableViewProps) {
           <select
             value={pageSize}
             onChange={(e) => {
-              setPageSize(Number(e.target.value));
-              setPageIndex(0);
+              table.setPageSize(Number(e.target.value));
             }}
             className="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300"
           >
-            <option value="10">10 per page</option>
-            <option value="25">25 per page</option>
-            <option value="50">50 per page</option>
-            <option value="100">100 per page</option>
+            {[10, 25, 50, 100].map((size) => (
+              <option key={size} value={size}>
+                {size} per page
+              </option>
+            ))}
           </select>
         </div>
 
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setPageIndex(0)}
-            disabled={pageIndex === 0}
+            onClick={() => table.setPageIndex(0)}
+            disabled={!table.getCanPreviousPage()}
             className="px-2 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
           >
             First
           </button>
           <button
-            onClick={() => setPageIndex((i) => Math.max(0, i - 1))}
-            disabled={pageIndex === 0}
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
             className="px-2 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
           >
             Previous
@@ -139,15 +134,15 @@ export function TableView({ rows, onRowClick }: TableViewProps) {
             Page {pageIndex + 1} of {table.getPageCount()}
           </span>
           <button
-            onClick={() => setPageIndex((i) => Math.min(table.getPageCount() - 1, i + 1))}
-            disabled={pageIndex >= table.getPageCount() - 1}
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
             className="px-2 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
           >
             Next
           </button>
           <button
-            onClick={() => setPageIndex(table.getPageCount() - 1)}
-            disabled={pageIndex >= table.getPageCount() - 1}
+            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            disabled={!table.getCanNextPage()}
             className="px-2 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
           >
             Last
@@ -170,9 +165,13 @@ export function TableView({ rows, onRowClick }: TableViewProps) {
                     <div className="flex items-center gap-1">
                       {flexRender(header.column.columnDef.header, header.getContext())}
                       <span className="flex items-center">
-                        {header.column.getIsSorted() === 'asc' && <ArrowUp className="w-3 h-3" />}
-                        {header.column.getIsSorted() === 'desc' && <ArrowDown className="w-3 h-3" />}
-                        {header.column.getIsSorted() === false && <ArrowUpDown className="w-3 h-3 text-gray-400" />}
+                        {header.column.getIsSorted() === 'asc' ? (
+                          <ArrowUp className="w-3 h-3" />
+                        ) : header.column.getIsSorted() === 'desc' ? (
+                          <ArrowDown className="w-3 h-3" />
+                        ) : (
+                          <ArrowUpDown className="w-3 h-3 text-gray-400" />
+                        )}
                       </span>
                     </div>
                   </th>
@@ -184,25 +183,25 @@ export function TableView({ rows, onRowClick }: TableViewProps) {
             ))}
           </thead>
           <tbody>
-            {paginatedRows.map((row, i) => (
+            {table.getRowModel().rows.map((row) => (
               <tr
-                key={i}
-                onClick={() => onRowClick?.(row as ResultRow)}
-                className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 cursor-pointer ${
+                key={row.id}
+                onClick={() => onRowClick?.(row.original)}
+                className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 ${
                   onRowClick ? 'cursor-pointer' : ''
                 }`}
               >
-                {Object.entries(row as ResultRow).map(([key, value]) => (
+                {row.getVisibleCells().map((cell) => (
                   <td
-                    key={key}
+                    key={cell.id}
                     className="px-3 py-2 text-gray-700 dark:text-gray-300 font-mono text-xs"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleCopyCell(formatCellValue(value), key);
+                      handleCopyCell(formatCellValue(cell.getValue()), cell.column.id);
                     }}
                   >
                     <span className="block truncate hover:bg-gray-100 dark:hover:bg-gray-700 px-1 rounded">
-                      {formatCellValue(value)}
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </span>
                   </td>
                 ))}
@@ -210,7 +209,7 @@ export function TableView({ rows, onRowClick }: TableViewProps) {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleCopyRow(row as ResultRow);
+                      handleCopyRow(row.original);
                     }}
                     className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                     title="Copy row"

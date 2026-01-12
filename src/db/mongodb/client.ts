@@ -148,6 +148,16 @@ export async function executeMongoQuery(query: string): Promise<MongoQueryResult
         };
       }
 
+      case 'drop': {
+        const dropped = executor.dropCollection(collection);
+        return {
+          success: true,
+          data: [{ dropped, message: `Collection '${collection}' dropped` }],
+          count: 0,
+          executionTime: performance.now() - start,
+        };
+      }
+
       default:
         return {
           success: false,

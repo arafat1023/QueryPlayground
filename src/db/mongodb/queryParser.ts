@@ -14,7 +14,8 @@ export type MongoOperation =
   | 'deleteOne'
   | 'deleteMany'
   | 'countDocuments'
-  | 'aggregate';
+  | 'aggregate'
+  | 'drop';
 
 /**
  * Parse MongoDB-style query string
@@ -27,7 +28,7 @@ export function parseMongoQuery(query: string): ParsedQuery | null {
 
     // Match pattern: db.collection.method(args...)
     const match = cleaned.match(
-      /db\.(\w+)\.(find|findOne|insertOne|insertMany|updateOne|updateMany|deleteOne|deleteMany|countDocuments|aggregate)\((.*)\)$/s
+      /db\.(\w+)\.(find|findOne|insertOne|insertMany|updateOne|updateMany|deleteOne|deleteMany|countDocuments|aggregate|drop)\((.*)\)$/s
     );
 
     if (!match) {
@@ -100,6 +101,11 @@ function parseArguments(argsStr: string, operation: MongoOperation): Record<stri
     case 'aggregate': {
       // aggregate([pipeline])
       args.pipeline = parseJSON(argsStr);
+      break;
+    }
+
+    case 'drop': {
+      // drop() - no arguments needed
       break;
     }
   }

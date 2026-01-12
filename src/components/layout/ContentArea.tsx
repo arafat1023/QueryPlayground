@@ -14,6 +14,26 @@ interface ContentAreaProps {
   isLoading?: boolean;
 }
 
+// Generate a stable key from row data for React list rendering
+function getRowKey(row: Record<string, unknown>, columns: string[], index: number): string {
+  // Try to find a unique ID field first
+  const idField = ['id', '_id', 'ID', 'Id'].find((field) => field in row);
+  if (idField && row[idField]) {
+    return String(row[idField]);
+  }
+
+  // Fallback: hash the row values for a stable key
+  const hash = columns
+    .map((col) => {
+      const v = row[col];
+      return v === null ? 'NULL' : v === undefined ? 'UNDEF' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+    })
+    .join('|');
+
+  // Include index as last resort to ensure uniqueness
+  return `${hash.substring(0, 50)}-${index}`;
+}
+
 export function ContentArea({isRunning, result, onRun, isReady, isLoading}: ContentAreaProps) {
   const {content, setContent} = useEditorStore();
   const {activeDatabase, panelSizes, setPanelSizes} = useUIStore();
@@ -186,7 +206,7 @@ function ResultsTable({result}: {result: QueryResult}) {
         <tbody>
           {rows.map((row, i) => (
             <tr
-              key={i}
+              key={getRowKey(row as Record<string, unknown>, columns, i)}
               className="hover:bg-gray-50 dark:hover:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800"
             >
               {columns.map((col) => (

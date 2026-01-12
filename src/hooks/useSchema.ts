@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useUIStore } from '@/store/uiStore';
 import type { DatabaseMode } from '@/types/editor';
 import type { PostgresTableSchema } from '@/db/postgres/types';
@@ -24,74 +24,7 @@ export function useSchema(): UseSchemaReturn {
   const [error, setError] = useState<SchemaError>(null);
   const { activeDatabase } = useUIStore();
 
-  const fetchPostgresSchema = async (): Promise<PostgresTableSchema[]> => {
-    const { getTableList, getTableSchema, getTableRowCount } = await import('@/db/postgres/helpers');
-
-    const tableNames = await getTableList();
-    const schemas: PostgresTableSchema[] = [];
-
-    for (const tableName of tableNames) {
-      const [schema, rowCount] = await Promise.all([
-        getTableSchema(tableName),
-        getTableRowCount(tableName),
-      ]);
-
-      if (schema) {
-        schemas.push({ ...schema, rowCount });
-      }
-    }
-
-    return schemas;
-  };
-
-  const inferMongoSchema = (
-    collectionName: string,
-    getCollection: (name: string) => Record<string, unknown>[],
-    getCollectionCount: (name: string) => number
-  ): MongoCollectionSchema => {
-    const collection = getCollection(collectionName);
-    const count = getCollectionCount(collectionName);
-
-    // Infer fields from existing documents (sample first 100 for performance)
-    const fieldsMap = new Map<string, Set<string>>();
-    const sampleSize = Math.min(collection.length, 100);
-    const sampledDocs = collection.slice(0, sampleSize);
-
-    for (const doc of sampledDocs) {
-      for (const [key, value] of Object.entries(doc)) {
-        if (!fieldsMap.has(key)) {
-          fieldsMap.set(key, new Set());
-        }
-
-        const typeSet = fieldsMap.get(key)!;
-
-        if (value === null) {
-          typeSet.add('null');
-        } else if (Array.isArray(value)) {
-          typeSet.add('array');
-        } else {
-          typeSet.add(typeof value);
-        }
-      }
-    }
-
-    const fields = Array.from(fieldsMap.entries()).map(([name, types]) => ({
-      name,
-      type: Array.from(types).join(' | '),
-    }));
-
-    return { name: collectionName, fields, count };
-  };
-
-  const fetchMongoSchema = async (): Promise<MongoCollectionSchema[]> => {
-    const { getCollectionList } = await import('@/db/mongodb/client');
-    const { getCollection, getCollectionCount } = await import('@/db/mongodb/queryExecutor');
-    const collectionNames = getCollectionList();
-
-    return collectionNames.map((name) => inferMongoSchema(name, getCollection, getCollectionCount));
-  };
-
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -99,9 +32,70 @@ export function useSchema(): UseSchemaReturn {
       let schemaData: SchemaData;
 
       if (activeDatabase === 'postgresql') {
-        schemaData = await fetchPostgresSchema();
+        // Fetch PostgreSQL schema
+        const { getTableList, getTableSchema, getTableRowCount } = await import('@/db/postgres/helpers');
+
+        const tableNames = await getTableList();
+        const schemas: PostgresTableSchema[] = [];
+
+        for (const tableName of tableNames) {
+          const [schema, rowCount] = await Promise.all([
+            getTableSchema(tableName),
+            getTableRowCount(tableName),
+          ]);
+
+          if (schema) {
+            schemas.push({ ...schema, rowCount });
+          }
+        }
+
+        schemaData = schemas;
       } else {
-        schemaData = await fetchMongoSchema();
+        // Fetch MongoDB schema
+        const { getCollectionList } = await import('@/db/mongodb/client');
+        const { getCollection, getCollectionCount } = await import('@/db/mongodb/queryExecutor');
+        const collectionNames = getCollectionList();
+
+        const inferMongoSchema = (
+          collectionName: string,
+          getCollectionFn: (name: string) => Record<string, unknown>[],
+          getCollectionCountFn: (name: string) => number
+        ): MongoCollectionSchema => {
+          const collection = getCollectionFn(collectionName);
+          const count = getCollectionCountFn(collectionName);
+
+          // Infer fields from existing documents (sample first 100 for performance)
+          const fieldsMap = new Map<string, Set<string>>();
+          const sampleSize = Math.min(collection.length, 100);
+          const sampledDocs = collection.slice(0, sampleSize);
+
+          for (const doc of sampledDocs) {
+            for (const [key, value] of Object.entries(doc)) {
+              if (!fieldsMap.has(key)) {
+                fieldsMap.set(key, new Set());
+              }
+
+              const typeSet = fieldsMap.get(key)!;
+
+              if (value === null) {
+                typeSet.add('null');
+              } else if (Array.isArray(value)) {
+                typeSet.add('array');
+              } else {
+                typeSet.add(typeof value);
+              }
+            }
+          }
+
+          const fields = Array.from(fieldsMap.entries()).map(([name, types]) => ({
+            name,
+            type: Array.from(types).join(' | '),
+          }));
+
+          return { name: collectionName, fields, count };
+        };
+
+        schemaData = collectionNames.map((name) => inferMongoSchema(name, getCollection, getCollectionCount));
       }
 
       setData(schemaData);
@@ -111,11 +105,11 @@ export function useSchema(): UseSchemaReturn {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeDatabase]);
 
   useEffect(() => {
     refresh();
-  }, [activeDatabase]);
+  }, [refresh]);
 
   return { data, isLoading, error, refresh };
 }
@@ -177,7 +171,7 @@ export function useTableSchema(
 
           setSchema({ name: tableName, fields, count });
         }
-      } catch (err) {
+      } catch {
         // Silently fail for individual table schema
         setSchema(null);
       }

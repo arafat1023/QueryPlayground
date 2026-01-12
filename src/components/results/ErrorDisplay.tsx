@@ -108,14 +108,16 @@ export function ErrorDisplay({ error, onDismiss }: ErrorDisplayProps) {
         </div>
 
         {/* Quick actions */}
-        <div className="mt-4 flex items-center justify-center gap-3">
-          <button
-            onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))}
-            className="px-3 py-1.5 text-xs font-medium text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
-          >
-            Dismiss
-          </button>
-        </div>
+        {onDismiss && (
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <button
+              onClick={onDismiss}
+              className="px-3 py-1.5 text-xs font-medium text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

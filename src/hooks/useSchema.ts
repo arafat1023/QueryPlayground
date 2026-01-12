@@ -52,10 +52,12 @@ export function useSchema(): UseSchemaReturn {
     const collection = getCollection(collectionName);
     const count = getCollectionCount(collectionName);
 
-    // Infer fields from existing documents
+    // Infer fields from existing documents (sample first 100 for performance)
     const fieldsMap = new Map<string, Set<string>>();
+    const sampleSize = Math.min(collection.length, 100);
+    const sampledDocs = collection.slice(0, sampleSize);
 
-    for (const doc of collection) {
+    for (const doc of sampledDocs) {
       for (const [key, value] of Object.entries(doc)) {
         if (!fieldsMap.has(key)) {
           fieldsMap.set(key, new Set());
@@ -68,16 +70,7 @@ export function useSchema(): UseSchemaReturn {
         } else if (Array.isArray(value)) {
           typeSet.add('array');
         } else {
-          const type = typeof value;
-          if (type === 'boolean') {
-            typeSet.add('boolean');
-          } else if (type === 'number') {
-            typeSet.add('number');
-          } else if (type === 'string') {
-            typeSet.add('string');
-          } else if (type === 'object') {
-            typeSet.add('object');
-          }
+          typeSet.add(typeof value);
         }
       }
     }
@@ -150,14 +143,16 @@ export function useTableSchema(
             setSchema(null);
           }
         } else {
-          // For MongoDB, infer schema on-demand
+          // For MongoDB, infer schema on-demand (sample first 100 for performance)
           const { getCollection, getCollectionCount } = await import('@/db/mongodb/queryExecutor');
           const collection = getCollection(tableName);
           const count = getCollectionCount(tableName);
 
           const fieldsMap = new Map<string, Set<string>>();
+          const sampleSize = Math.min(collection.length, 100);
+          const sampledDocs = collection.slice(0, sampleSize);
 
-          for (const doc of collection) {
+          for (const doc of sampledDocs) {
             for (const [key, value] of Object.entries(doc)) {
               if (!fieldsMap.has(key)) {
                 fieldsMap.set(key, new Set());

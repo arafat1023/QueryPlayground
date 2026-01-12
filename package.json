@@ -49,6 +49,7 @@
     "@electric-sql/pglite": "^0.3.14",
     "@monaco-editor/react": "^4.7.0",
     "@tanstack/react-table": "^8.21.3",
+    "@uiw/react-json-view": "2.0.0-alpha.40",
     "lucide-react": "^0.562.0",
     "mingo": "^7.1.1",
     "monaco-editor": "^0.55.1",

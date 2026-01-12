@@ -1,9 +1,9 @@
-import { useRef, useEffect, useCallback } from 'react';
-import Editor, { type OnMount, type OnChange, type Monaco } from '@monaco-editor/react';
-import type { editor } from 'monaco-editor';
-import { useEditorKeyboard } from './hooks/useEditorKeyboard';
-import { configureSQLLanguage } from './config/sqlLanguage';
-import { configureMongoLanguage } from './config/mongoLanguage';
+import {useRef, useEffect, useCallback} from 'react';
+import Editor, {type OnMount, type OnChange, type Monaco} from '@monaco-editor/react';
+import type {editor} from 'monaco-editor';
+import {useEditorKeyboard} from './hooks/useEditorKeyboard';
+import {configureSQLLanguage} from './config/sqlLanguage';
+import {configureMongoLanguage} from './config/mongoLanguage';
 import {
   sqlDarkTheme,
   sqlLightTheme,
@@ -12,7 +12,7 @@ import {
   getThemeId,
   THEME_IDS,
 } from './config/editorThemes';
-import type { QueryEditorProps } from '@/types/editor';
+import type {QueryEditorProps} from '@/types/editor';
 
 /**
  * QueryEditor component - Monaco Editor wrapper for SQL and MongoDB queries
@@ -36,7 +36,7 @@ export function QueryEditor({
   const monacoRef = useRef<Monaco | null>(null);
 
   // Set up keyboard shortcuts
-  useEditorKeyboard({ editorRef, onRun });
+  useEditorKeyboard({editorRef, onRun});
 
   // Get language based on mode
   const getLanguage = useCallback(() => {
@@ -86,14 +86,14 @@ export function QueryEditor({
   // Update read-only state
   useEffect(() => {
     if (editorRef.current) {
-      editorRef.current.updateOptions({ readOnly });
+      editorRef.current.updateOptions({readOnly});
     }
   }, [readOnly]);
 
   // Memoize editor options
   const editorOptions = useCallback(
     () => ({
-      minimap: { enabled: false },
+      minimap: {enabled: false},
       fontSize: 14,
       tabSize: 2,
       wordWrap: 'on' as const,
@@ -102,7 +102,7 @@ export function QueryEditor({
       readOnly,
       quickSuggestions: true,
       suggestOnTriggerCharacters: true,
-      parameterHints: { enabled: true },
+      parameterHints: {enabled: true},
       folding: true,
       lineNumbers: 'on' as const,
       renderWhitespace: 'selection' as const,
@@ -116,7 +116,7 @@ export function QueryEditor({
   const currentTheme = getThemeId(mode, theme);
 
   return (
-    <div className="border border-gray-300 rounded-lg overflow-hidden">
+    <div className="h-full border border-gray-300 rounded-lg overflow-hidden">
       <Editor
         height={height}
         language={getLanguage()}

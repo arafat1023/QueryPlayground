@@ -6,7 +6,7 @@ import { TableList } from './TableList';
 import { CollectionList } from './CollectionList';
 
 interface SchemaExplorerProps {
-  onCreateTable?: () => void;
+  onResetToDefault?: () => void;
   onImportData?: () => void;
 }
 
@@ -14,7 +14,7 @@ interface SchemaExplorerProps {
  * Main schema explorer component that displays tables/collections
  * Automatically switches between PostgreSQL and MongoDB views
  */
-export function SchemaExplorer({ onCreateTable, onImportData }: SchemaExplorerProps) {
+export function SchemaExplorer({ onResetToDefault, onImportData }: SchemaExplorerProps) {
   const { activeDatabase } = useUIStore();
   const { content, setContent } = useEditorStore();
   const { data, isLoading, error, refresh } = useSchema();
@@ -108,9 +108,9 @@ export function SchemaExplorer({ onCreateTable, onImportData }: SchemaExplorerPr
           <Database className="w-4 h-4" />
           <span>Import Data</span>
         </button>
-        {onCreateTable && (
+        {onResetToDefault && (
           <button
-            onClick={onCreateTable}
+            onClick={onResetToDefault}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
           >
             <RefreshCw className="w-4 h-4" />

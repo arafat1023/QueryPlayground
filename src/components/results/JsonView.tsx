@@ -73,11 +73,14 @@ export function JsonView({ data, className = '' }: JsonViewProps) {
 
       {/* JSON documents */}
       <div className="flex-1 overflow-auto p-3 space-y-3">
-        {data.map((item, index) => (
-          <div
-            key={index}
-            className="relative group border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
-          >
+        {data.map((item, index) => {
+          const itemWithId = item as Record<string, unknown> & { _id?: unknown };
+          const uniqueKey = String(itemWithId._id || index);
+          return (
+            <div
+              key={uniqueKey}
+              className="relative group border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+            >
             {/* Document header */}
             <div className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
               <span className="text-xs font-mono text-gray-600 dark:text-gray-400">
@@ -125,7 +128,8 @@ export function JsonView({ data, className = '' }: JsonViewProps) {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

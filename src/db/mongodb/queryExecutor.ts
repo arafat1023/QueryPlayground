@@ -26,8 +26,8 @@ export function find(
   const collection = getCollection(collectionName);
   const query = new Query(filter);
 
-  // Mingo supports projection as the second argument to find()
-  let cursor = query.find(collection, options?.projection);
+  // Don't pass projection to mingo (causes "assert is not defined" error in browser)
+  let cursor = query.find(collection);
 
   // Apply sort
   if (options?.sort) {
@@ -44,7 +44,67 @@ export function find(
     cursor = cursor.limit(options.limit);
   }
 
-  return cursor.all() as MongoDocument[];
+  let results = cursor.all() as MongoDocument[];
+
+  // Manually apply projection if provided
+  if (options?.projection) {
+    results = applyProjection(results, options.projection);
+  }
+
+  return results;
+}
+
+/**
+ * Manually apply projection to documents
+ * Supports both inclusive and exclusive projections
+ */
+function applyProjection(
+  docs: MongoDocument[],
+  projection: Record<string, number | boolean | string>
+): MongoDocument[] {
+  const keys = Object.keys(projection);
+
+  // If projection is empty, return docs as-is
+  if (keys.length === 0) {
+    return docs;
+  }
+
+  // Determine if this is an inclusive or exclusive projection
+  // Inclusive: { name: 1, city: 1 } - only include these fields
+  // Exclusive: { email: 0, password: 0 } - exclude these fields
+  const isInclusive = Object.values(projection).some(
+    (v) => v === 1 || v === true || v === '1'
+  );
+
+  return docs.map((doc) => {
+    if (isInclusive) {
+      // Inclusive projection - only include specified fields
+      const projected: MongoDocument = {};
+      for (const key of keys) {
+        const value = projection[key];
+        if (value === 1 || value === true || value === '1') {
+          if (key in doc) {
+            projected[key] = doc[key];
+          }
+        }
+      }
+      // MongoDB includes _id by default in inclusive projections unless explicitly excluded
+      if (doc._id !== undefined && !(projection._id === 0 || projection._id === false || projection._id === '0')) {
+        projected._id = doc._id;
+      }
+      return projected;
+    } else {
+      // Exclusive projection - exclude specified fields
+      const projected = { ...doc };
+      for (const key of keys) {
+        const value = projection[key];
+        if (value === 0 || value === false || value === '0') {
+          delete projected[key];
+        }
+      }
+      return projected;
+    }
+  });
 }
 
 /**

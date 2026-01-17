@@ -12,10 +12,12 @@ interface ErrorDisplayProps {
  */
 export function ErrorDisplay({ error, onDismiss }: ErrorDisplayProps) {
   // Extract error message and metadata from string or QueryError object
-  const errorMessage = typeof error === 'string' ? error : error.message;
-  const errorHint = typeof error === 'string' ? undefined : error.hint;
-  const errorStatement = typeof error === 'string' ? undefined : error.statement;
-  const errorCode = typeof error === 'string' ? undefined : error.code;
+  const {
+    message: errorMessage,
+    hint: errorHint,
+    statement: errorStatement,
+    code: errorCode,
+  } = typeof error === 'string' ? { message: error } : error;
 
   // Try to extract useful information from the error
   const parseError = (errorMessage: string) => {

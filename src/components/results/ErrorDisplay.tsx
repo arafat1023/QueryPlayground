@@ -1,7 +1,8 @@
 import { AlertCircle, X } from 'lucide-react';
+import type { QueryError } from '../../types';
 
 interface ErrorDisplayProps {
-  error: string;
+  error: string | QueryError;
   onDismiss?: () => void;
 }
 
@@ -10,6 +11,12 @@ interface ErrorDisplayProps {
  * Shows error message in a styled alert box
  */
 export function ErrorDisplay({ error, onDismiss }: ErrorDisplayProps) {
+  // Extract error message and metadata from string or QueryError object
+  const errorMessage = typeof error === 'string' ? error : error.message;
+  const errorHint = typeof error === 'string' ? undefined : error.hint;
+  const errorStatement = typeof error === 'string' ? undefined : error.statement;
+  const errorCode = typeof error === 'string' ? undefined : error.code;
+
   // Try to extract useful information from the error
   const parseError = (errorMessage: string) => {
     // PostgreSQL error patterns
@@ -43,7 +50,7 @@ export function ErrorDisplay({ error, onDismiss }: ErrorDisplayProps) {
     };
   };
 
-  const parsed = parseError(error);
+  const parsed = parseError(errorMessage);
 
   return (
     <div className="flex flex-col items-center justify-center h-full p-4">
@@ -68,6 +75,12 @@ export function ErrorDisplay({ error, onDismiss }: ErrorDisplayProps) {
                 )}
               </div>
 
+              {errorStatement && (
+                <p className="text-xs text-red-600 dark:text-red-500 mb-1">
+                  {errorStatement}
+                </p>
+              )}
+
               {parsed.detail && (
                 <p className="text-xs text-red-600 dark:text-red-500 mb-2">
                   {parsed.type}: <span className="font-mono">{parsed.detail}</span>
@@ -75,11 +88,27 @@ export function ErrorDisplay({ error, onDismiss }: ErrorDisplayProps) {
               )}
 
               <p className="text-xs text-red-700 dark:text-red-400 font-mono bg-red-100 dark:bg-red-900/30 p-2 rounded overflow-x-auto whitespace-pre-wrap">
-                {error}
+                {errorMessage}
               </p>
 
-              {/* Common fixes suggestions */}
-              {error.toLowerCase().includes('relation') && (
+              {/* Error code */}
+              {errorCode && (
+                <p className="text-xs text-red-600 dark:text-red-500 mt-2">
+                  Error code: <span className="font-mono">{errorCode}</span>
+                </p>
+              )}
+
+              {/* Hint from QueryError */}
+              {errorHint && (
+                <div className="mt-3 p-2 bg-red-100 dark:bg-red-900/40 rounded">
+                  <p className="text-xs text-red-700 dark:text-red-400">
+                    <strong>Hint:</strong> {errorHint}
+                  </p>
+                </div>
+              )}
+
+              {/* Common fixes suggestions (legacy string-based hints) */}
+              {!errorHint && errorMessage.toLowerCase().includes('relation') && (
                 <div className="mt-3 p-2 bg-red-100 dark:bg-red-900/40 rounded">
                   <p className="text-xs text-red-700 dark:text-red-400">
                     <strong>Hint:</strong> Check if the table name is correct and exists in your
@@ -88,7 +117,7 @@ export function ErrorDisplay({ error, onDismiss }: ErrorDisplayProps) {
                 </div>
               )}
 
-              {error.toLowerCase().includes('column') && (
+              {!errorHint && errorMessage.toLowerCase().includes('column') && (
                 <div className="mt-3 p-2 bg-red-100 dark:bg-red-900/40 rounded">
                   <p className="text-xs text-red-700 dark:text-red-400">
                     <strong>Hint:</strong> Check the Schema Explorer to see available columns.
@@ -96,7 +125,7 @@ export function ErrorDisplay({ error, onDismiss }: ErrorDisplayProps) {
                 </div>
               )}
 
-              {error.toLowerCase().includes('syntax') && (
+              {!errorHint && errorMessage.toLowerCase().includes('syntax') && (
                 <div className="mt-3 p-2 bg-red-100 dark:bg-red-900/40 rounded">
                   <p className="text-xs text-red-700 dark:text-red-400">
                     <strong>Hint:</strong> Check for missing commas, quotes, or keywords.

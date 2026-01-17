@@ -4,13 +4,23 @@ export interface DatabaseType {
   type: 'postgresql' | 'mongodb';
 }
 
+export interface QueryError {
+  message: string;
+  code?: string;
+  statement?: string;
+  line?: number;
+  column?: number;
+  hint?: string;
+}
+
 export interface QueryResult {
   success: boolean;
   rows?: unknown[];
   fields?: unknown[];
   rowCount?: number;
-  error?: string;
+  error?: string | QueryError;
   executionTime: number;
+  statementCount?: number;
 }
 
 export interface TableSchema {

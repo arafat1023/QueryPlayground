@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { usePostgres } from './usePostgres';
 import { useMongoDB } from './useMongoDB';
 import { useUIStore } from '../store/uiStore';
@@ -104,7 +104,7 @@ function splitPostgresStatements(query: string): string[] {
   const lastStmt = current.trim();
   if (lastStmt) statements.push(lastStmt);
 
-  return statements.length > 0 ? statements : [''];
+  return statements;
 }
 
 /**
@@ -176,14 +176,20 @@ function isEmptyQuery(query: string): boolean {
 export function useQueryExecution(
   options: UseQueryExecutionOptions = {}
 ): UseQueryExecutionReturn {
-  const { onSuccess, onError } = options;
-
   const { executeQuery: executePgQuery } = usePostgres();
   const { executeQuery: executeMongoQuery } = useMongoDB();
   const { activeDatabase } = useUIStore();
 
   const [isRunning, setIsRunning] = useState(false);
   const [lastResult, setLastResult] = useState<QueryResult | null>(null);
+
+  // Use ref for concurrency check to avoid dependency in useCallback
+  const isRunningRef = useRef(false);
+  // Keep options in a ref to avoid dependency on callbacks
+  const optionsRef = useRef(options);
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
 
   // Track last execution time for debouncing
   const lastExecutionTime = useRef(0);
@@ -293,7 +299,7 @@ export function useQueryExecution(
   const executeQuery = useCallback(
     async (query: string): Promise<QueryResult | null> => {
       // Prevent concurrent executions
-      if (isRunning) {
+      if (isRunningRef.current) {
         console.warn('[useQueryExecution] Query already executing, skipping');
         return lastResult;
       }
@@ -317,10 +323,11 @@ export function useQueryExecution(
           },
           executionTime: 0,
         };
-        onError?.('Empty query - please enter a query to execute');
+        optionsRef.current.onError?.('Empty query - please enter a query to execute');
         return emptyError;
       }
 
+      isRunningRef.current = true;
       setIsRunning(true);
       lastExecutionTime.current = now;
 
@@ -336,29 +343,22 @@ export function useQueryExecution(
 
         setLastResult(result);
 
-        // Handle callbacks
+        // Handle callbacks using ref
         if (result.success) {
-          onSuccess?.(result);
+          optionsRef.current.onSuccess?.(result);
         } else {
           const errorMessage =
             typeof result.error === 'string' ? result.error : result.error?.message || 'Unknown error';
-          onError?.(errorMessage);
+          optionsRef.current.onError?.(errorMessage);
         }
 
         return result;
       } finally {
+        isRunningRef.current = false;
         setIsRunning(false);
       }
     },
-    [
-      isRunning,
-      lastResult,
-      executePostgresStatements,
-      executeMongoStatement,
-      activeDatabase,
-      onSuccess,
-      onError,
-    ]
+    [executePostgresStatements, executeMongoStatement, activeDatabase, lastResult]
   );
 
   const clearResult = useCallback(() => {

@@ -88,6 +88,10 @@ function applyProjection(
           }
         }
       }
+      // MongoDB includes _id by default in inclusive projections unless explicitly excluded
+      if (doc._id !== undefined && !(projection._id === 0 || projection._id === false || projection._id === '0')) {
+        projected._id = doc._id;
+      }
       return projected;
     } else {
       // Exclusive projection - exclude specified fields

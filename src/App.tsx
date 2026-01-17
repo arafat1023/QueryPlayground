@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
-import { Toaster } from 'sonner';
+import { useCallback, useEffect } from 'react';
+import { toast, Toaster } from 'sonner';
 import { usePostgres } from './hooks/usePostgres';
 import { useMongoDB } from './hooks/useMongoDB';
+import { useQueryExecution } from './hooks/useQueryExecution';
 import { useEditorStore } from './store/editorStore';
 import { useUIStore } from './store/uiStore';
 import { MainLayout } from './components/layout/MainLayout';
@@ -12,49 +13,43 @@ function App() {
   const {
     isReady: pgReady,
     isLoading: pgLoading,
-    executeQuery: executePgQuery,
   } = usePostgres();
 
   const {
     isReady: mongoReady,
-    executeQuery: executeMongoQuery,
   } = useMongoDB();
 
   const { content, setDefaultQuery } = useEditorStore();
   const { activeDatabase, setActiveDatabase } = useUIStore();
 
-  const [result, setResult] = useState<QueryResult | null>(null);
-  const [isRunning, setIsRunning] = useState(false);
-
   // Get current database status
   const isReady = activeDatabase === 'postgresql' ? pgReady : mongoReady;
   const isLoading = activeDatabase === 'postgresql' ? pgLoading : false;
 
+  // Use the unified query execution hook
+  const { executeQuery, isRunning, lastResult: result, clearResult } = useQueryExecution({
+    onSuccess: (result: QueryResult) => {
+      toast.success(`Query executed in ${result.executionTime.toFixed(2)}ms`);
+    },
+    onError: (error: string) => {
+      toast.error(error);
+    },
+  });
+
   // Run query
   const runQuery = useCallback(async () => {
-    if (!isReady || isRunning) return;
-
-    setIsRunning(true);
-    try {
-      const queryResult =
-        activeDatabase === 'postgresql'
-          ? await executePgQuery(content)
-          : await executeMongoQuery(content);
-
-      setResult(queryResult);
-    } finally {
-      setIsRunning(false);
-    }
-  }, [activeDatabase, content, executePgQuery, executeMongoQuery, isReady, isRunning]);
+    if (!isReady) return;
+    await executeQuery(content);
+  }, [content, isReady, executeQuery]);
 
   // Handle database switch
   const handleDatabaseChange = useCallback(
     (db: DatabaseMode) => {
       setActiveDatabase(db);
       setDefaultQuery(db);
-      setResult(null);
+      clearResult();
     },
-    [setActiveDatabase, setDefaultQuery]
+    [setActiveDatabase, setDefaultQuery, clearResult]
   );
 
   // Set default query on initial load based on active database

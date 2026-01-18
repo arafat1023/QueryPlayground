@@ -62,10 +62,8 @@ export const useEditorStore = create<EditorState>()(
     }),
     {
       name: 'qp_editor',
-      partialize: (state) => ({
-        settings: state.settings,
-        // Don't persist content - always start with default query
-      }),
+      // Editor content and settings are persisted
+      // Debouncing handled automatically by zustand persist middleware
     }
   )
 );

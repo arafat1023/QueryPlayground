@@ -16,6 +16,10 @@ interface UIState {
   // Active database
   activeDatabase: DatabaseMode;
 
+  // Active table/collection (for export functionality)
+  activeTable: string | null;
+  activeCollection: string | null;
+
   // Panel sizes (percentages)
   panelSizes: PanelSizes;
 
@@ -26,6 +30,8 @@ interface UIState {
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
   setActiveDatabase: (db: DatabaseMode) => void;
+  setActiveTable: (table: string | null) => void;
+  setActiveCollection: (collection: string | null) => void;
   setPanelSizes: (sizes: Partial<PanelSizes>) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   toggleSidebar: () => void;
@@ -42,6 +48,8 @@ export const useUIStore = create<UIState>()(
       // Initial state
       theme: 'light',
       activeDatabase: 'postgresql',
+      activeTable: null,
+      activeCollection: null,
       panelSizes: DEFAULT_PANEL_SIZES,
       sidebarCollapsed: false,
 
@@ -65,6 +73,16 @@ export const useUIStore = create<UIState>()(
       // Set active database
       setActiveDatabase: (db: DatabaseMode) => {
         set({ activeDatabase: db });
+      },
+
+      // Set active table
+      setActiveTable: (table: string | null) => {
+        set({ activeTable: table, activeCollection: null });
+      },
+
+      // Set active collection
+      setActiveCollection: (collection: string | null) => {
+        set({ activeCollection: collection, activeTable: null });
       },
 
       // Set panel sizes

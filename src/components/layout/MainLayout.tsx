@@ -14,6 +14,7 @@ interface MainLayoutProps {
   onDatabaseChange: (db: DatabaseMode) => void;
   isReady: boolean;
   isLoading?: boolean;
+  onResetToDefault?: () => void;
 }
 
 export function MainLayout({
@@ -23,6 +24,7 @@ export function MainLayout({
   onDatabaseChange,
   isReady,
   isLoading,
+  onResetToDefault,
 }: MainLayoutProps) {
   const {panelSizes, setPanelSizes, sidebarCollapsed, setSidebarCollapsed} = useUIStore();
 
@@ -63,7 +65,7 @@ export function MainLayout({
                 maxSize="35"
                 className="hidden lg:block"
               >
-                <Sidebar />
+                <Sidebar onResetToDefault={onResetToDefault} />
               </Panel>
 
               {/* Resize Handle */}
@@ -96,12 +98,12 @@ export function MainLayout({
       </div>
 
       {/* Mobile Sidebar Overlay */}
-      <MobileSidebar />
+      <MobileSidebar onResetToDefault={onResetToDefault} />
     </div>
   );
 }
 
-function MobileSidebar() {
+function MobileSidebar({ onResetToDefault }: { onResetToDefault?: () => void }) {
   const {sidebarCollapsed, setSidebarCollapsed} = useUIStore();
 
   if (sidebarCollapsed) return null;
@@ -116,7 +118,7 @@ function MobileSidebar() {
 
       {/* Sidebar */}
       <div className="absolute left-0 top-0 bottom-0 w-72 bg-white dark:bg-gray-900 shadow-xl">
-        <Sidebar />
+        <Sidebar onResetToDefault={onResetToDefault} />
       </div>
     </div>
   );

@@ -59,14 +59,20 @@ export function TableItem({
       {/* Columns list */}
       {isExpanded && (
         <div className="pl-6 pr-2 pb-1 space-y-0.5">
-          {table.columns.map((column) => (
-            <ColumnItem
-              key={column.name}
-              column={column}
-              dbType="postgresql"
-              onClick={onColumnClick}
-            />
-          ))}
+          {table.columns && table.columns.length > 0 ? (
+            table.columns.map((column) => (
+              <ColumnItem
+                key={column.name}
+                column={column}
+                dbType="postgresql"
+                onClick={onColumnClick}
+              />
+            ))
+          ) : (
+            <div className="px-2 py-2 text-xs text-gray-400 dark:text-gray-500 italic">
+              No columns
+            </div>
+          )}
         </div>
       )}
     </div>

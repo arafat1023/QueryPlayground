@@ -27,6 +27,7 @@ export function useSchema(): UseSchemaReturn {
   const refresh = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setData([]); // Clear stale data immediately
 
     try {
       let schemaData: SchemaData;
@@ -95,7 +96,15 @@ export function useSchema(): UseSchemaReturn {
           return { name: collectionName, fields, count };
         };
 
-        schemaData = collectionNames.map((name) => inferMongoSchema(name, getCollection, getCollectionCount));
+        schemaData = collectionNames.map((name) => {
+          try {
+            return inferMongoSchema(name, getCollection, getCollectionCount);
+          } catch (error) {
+            console.error(`Failed to infer schema for collection "${name}":`, error);
+            // Return a safe fallback schema
+            return { name, fields: [], count: 0 };
+          }
+        });
       }
 
       setData(schemaData);
@@ -109,6 +118,16 @@ export function useSchema(): UseSchemaReturn {
 
   useEffect(() => {
     refresh();
+  }, [activeDatabase]); // Depend on activeDatabase directly instead of refresh
+
+  // Listen for custom refresh event (triggered after reset)
+  useEffect(() => {
+    const handleRefresh = () => {
+      refresh();
+    };
+
+    window.addEventListener('schema-refresh', handleRefresh);
+    return () => window.removeEventListener('schema-refresh', handleRefresh);
   }, [refresh]);
 
   return { data, isLoading, error, refresh };

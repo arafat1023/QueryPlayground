@@ -59,7 +59,7 @@ export function CollectionItem({
       {/* Fields list */}
       {isExpanded && (
         <div className="pl-6 pr-2 pb-1 space-y-0.5">
-          {collection.fields.length > 0 ? (
+          {collection.fields && collection.fields.length > 0 ? (
             collection.fields.map((field) => (
               <ColumnItem key={field.name} column={field} dbType="mongodb" onClick={onFieldClick} />
             ))

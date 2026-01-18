@@ -2,8 +2,42 @@ import { Query, Aggregator } from 'mingo';
 import type { MongoDocument, FindOptions, UpdateOperators, PipelineStage } from './types';
 import { generateObjectId } from './queryParser';
 
+const PERSISTENCE_KEY = 'qp_mongo_collections';
+
 // In-memory collection store
 const collections: Map<string, MongoDocument[]> = new Map();
+
+/**
+ * Save collections to localStorage for persistence
+ */
+function saveCollections(): void {
+  try {
+    const collectionsData = Object.fromEntries(collections);
+    localStorage.setItem(PERSISTENCE_KEY, JSON.stringify(collectionsData));
+  } catch (error) {
+    console.error('Failed to save collections to localStorage:', error);
+  }
+}
+
+/**
+ * Load collections from localStorage on initialization
+ */
+function loadCollections(): void {
+  try {
+    const stored = localStorage.getItem(PERSISTENCE_KEY);
+    if (stored) {
+      const collectionsData = JSON.parse(stored);
+      for (const [name, docs] of Object.entries(collectionsData)) {
+        collections.set(name, docs as MongoDocument[]);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load collections from localStorage:', error);
+  }
+}
+
+// Load persisted collections when module initializes
+loadCollections();
 
 /**
  * Get or create a collection
@@ -128,6 +162,7 @@ export function insertOne(collectionName: string, doc: MongoDocument): { inserte
     _id: doc._id || generateObjectId(),
   };
   collection.push(newDoc);
+  saveCollections();
   return { insertedId: newDoc._id as string };
 }
 
@@ -143,6 +178,7 @@ export function insertMany(collectionName: string, docs: MongoDocument[]): {
     _id: doc._id || generateObjectId(),
   }));
   collection.push(...newDocs);
+  saveCollections();
   return { insertedIds: newDocs.map((d) => d._id as string) };
 }
 
@@ -167,6 +203,7 @@ export function update(
   }
 
   let modifiedCount = 0;
+  let hasChanges = false;
 
   // Update each matching document
   for (const doc of matches) {
@@ -240,12 +277,17 @@ export function update(
 
     if (updated) {
       modifiedCount++;
+      hasChanges = true;
     }
 
     // If not multi, only update first match
     if (!options?.multi) {
       break;
     }
+  }
+
+  if (hasChanges) {
+    saveCollections();
   }
 
   return { matchedCount, modifiedCount };
@@ -261,6 +303,7 @@ export function deleteDocs(
 ): { deletedCount: number } {
   const collection = getCollection(collectionName);
   const query = new Query(filter);
+  let deletedCount = 0;
 
   if (options?.multi) {
     // Find all matches and remove them
@@ -269,22 +312,26 @@ export function deleteDocs(
       const index = collection.indexOf(doc as MongoDocument);
       if (index > -1) {
         collection.splice(index, 1);
+        deletedCount++;
       }
     });
-    return { deletedCount: matches.length };
-  }
-
-  // Single document deletion - find first match and remove it
-  const match = query.find(collection).next();
-  if (match) {
-    const index = collection.indexOf(match as MongoDocument);
-    if (index > -1) {
-      collection.splice(index, 1);
-      return { deletedCount: 1 };
+  } else {
+    // Single document deletion - find first match and remove it
+    const match = query.find(collection).next();
+    if (match) {
+      const index = collection.indexOf(match as MongoDocument);
+      if (index > -1) {
+        collection.splice(index, 1);
+        deletedCount = 1;
+      }
     }
   }
 
-  return { deletedCount: 0 };
+  if (deletedCount > 0) {
+    saveCollections();
+  }
+
+  return { deletedCount };
 }
 
 /**
@@ -314,13 +361,18 @@ export function aggregate(collectionName: string, pipeline: PipelineStage[]): un
  */
 export function clearAllCollections(): void {
   collections.clear();
+  saveCollections();
 }
 
 /**
  * Drop a specific collection
  */
 export function dropCollection(collectionName: string): boolean {
-  return collections.delete(collectionName);
+  const deleted = collections.delete(collectionName);
+  if (deleted) {
+    saveCollections();
+  }
+  return deleted;
 }
 
 /**

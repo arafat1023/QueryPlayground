@@ -22,17 +22,17 @@ export function StorageIndicator() {
   if (usage < 70) return null; // Only show when >70% full
 
   return (
-    <button
-      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+    <div
+      className="p-2"
       title={`Storage: ${usage.toFixed(1)}% used`}
-      aria-label="Storage usage"
+      aria-label={`Storage usage: ${usage.toFixed(0)}% used`}
+      role="status"
     >
       {showWarning ? (
         <AlertTriangle className="w-5 h-5 text-amber-500" />
       ) : (
         <HardDrive className="w-5 h-5 text-gray-600 dark:text-gray-400" />
       )}
-      <span className="sr-only">{usage.toFixed(0)}% used</span>
-    </button>
+    </div>
   );
 }

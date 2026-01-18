@@ -6,18 +6,11 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onResetToDefault }: SidebarProps) {
-  const handleImportData = () => {
-    // TODO: Implement import data modal (branch 11)
-  };
-
   return (
     <div className="h-full flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
       {/* Schema Explorer Section */}
       <div className="flex-1 flex flex-col min-h-0">
-        <SchemaExplorer
-          onImportData={handleImportData}
-          onResetToDefault={onResetToDefault}
-        />
+        <SchemaExplorer onResetToDefault={onResetToDefault} />
       </div>
 
       {/* Query History Section */}

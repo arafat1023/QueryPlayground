@@ -1,5 +1,5 @@
 import type { MongoDocument } from './types';
-import { insertMany, getCollection, getCollectionNames } from './queryExecutor';
+import { insertMany, getCollection, getCollectionNames, clearAllCollections } from './queryExecutor';
 
 /**
  * Seed data for users collection (10 docs)
@@ -444,13 +444,8 @@ export function loadDefaultMongoData(): boolean {
  */
 export function resetMongoData(): void {
   try {
-    // Clear all collections
-    const collectionNames = getCollectionNames();
-    for (const name of collectionNames) {
-      // Drop each collection
-      const collection = getCollection(name);
-      collection.length = 0;
-    }
+    // Clear all collections to ensure a full reset
+    clearAllCollections();
 
     // Reload default data
     loadDefaultMongoData();

@@ -1,13 +1,13 @@
 import { History } from 'lucide-react';
 import { SchemaExplorer } from '@/components/schema/SchemaExplorer';
 
-export function Sidebar() {
+interface SidebarProps {
+  onResetToDefault?: () => void;
+}
+
+export function Sidebar({ onResetToDefault }: SidebarProps) {
   const handleImportData = () => {
     // TODO: Implement import data modal (branch 11)
-  };
-
-  const handleResetToDefault = () => {
-    // TODO: Implement reset to default (branch 09)
   };
 
   return (
@@ -16,7 +16,7 @@ export function Sidebar() {
       <div className="flex-1 flex flex-col min-h-0">
         <SchemaExplorer
           onImportData={handleImportData}
-          onResetToDefault={handleResetToDefault}
+          onResetToDefault={onResetToDefault}
         />
       </div>
 

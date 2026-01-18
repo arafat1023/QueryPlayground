@@ -26,6 +26,9 @@ dependencies:
   monaco-editor:
     specifier: ^0.55.1
     version: 0.55.1
+  papaparse:
+    specifier: ^5.5.3
+    version: 5.5.3
   react:
     specifier: ^19.2.3
     version: 19.2.3
@@ -49,6 +52,9 @@ devDependencies:
   '@types/node':
     specifier: ^25.0.5
     version: 25.0.5
+  '@types/papaparse':
+    specifier: ^5.5.2
+    version: 5.5.2
   '@types/react':
     specifier: ^19.2.8
     version: 19.2.8
@@ -1101,6 +1107,12 @@ packages:
     resolution: {integrity: sha512-FuLxeLuSVOqHPxSN1fkcD8DLU21gAP7nCKqGRJ/FglbCUBs0NYN6TpHcdmyLeh8C0KwGIaZQJSv+OYG+KZz+Gw==}
     dependencies:
       undici-types: 7.16.0
+    dev: true
+
+  /@types/papaparse@5.5.2:
+    resolution: {integrity: sha512-gFnFp/JMzLHCwRf7tQHrNnfhN4eYBVYYI897CGX4MY1tzY9l2aLkVyx2IlKZ/SAqDbB3I1AOZW5gTMGGsqWliA==}
+    dependencies:
+      '@types/node': 25.0.5
     dev: true
 
   /@types/react-dom@19.2.3(@types/react@19.2.8):
@@ -2804,6 +2816,10 @@ packages:
     dependencies:
       p-limit: 3.1.0
     dev: true
+
+  /papaparse@5.5.3:
+    resolution: {integrity: sha512-5QvjGxYVjxO59MGU2lHVYpRWBBtKHnlIAcSe1uNFCkkptUh63NFRj0FJQm7nR67puEruUci/ZkjmEFrjCAyP4A==}
+    dev: false
 
   /parent-module@1.0.1:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}

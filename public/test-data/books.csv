@@ -1,0 +1,11 @@
+isbn,title,author,genre,price,published_year,rating
+978-0-13-468599-1,The Pragmatic Programmer,Andrew Hunt,Technology,39.99,1999,4.8
+978-0-596-00712-6,JavaScript: The Good Parts,Douglas Crockford,Technology,29.99,2008,4.5
+978-0-321-12521-7,Design Patterns,Erich Gamma,Technology,54.99,1994,4.7
+978-0-201-63361-0,Refactoring,Martin Fowler,Technology,64.99,1999,4.6
+978-0-13-235088-4,Clean Code,Robert Martin,Technology,44.99,2008,4.7
+978-0-596-51774-8,High Performance Web Sites,Steve Souders,Technology,34.99,2007,4.3
+978-0-321-60578-2,Domain-Driven Design,Eric Evans,Technology,59.99,2003,4.6
+978-0-13-196859-5,Patterns of Enterprise Architecture,Martin Fowler,Technology,69.99,2002,4.5
+978-0-06-112008-4,The Clean Coder,Robert Martin,Technology,42.99,2011,4.4
+978-0-13-708107-3,Continuous Delivery,Jez Humble,Technology,49.99,2010,4.6

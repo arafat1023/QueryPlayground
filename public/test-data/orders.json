@@ -1,0 +1,66 @@
+[
+  {
+    "order_id": 1001,
+    "customer_name": "Alice Johnson",
+    "email": "alice@example.com",
+    "total_amount": 299.99,
+    "status": "completed",
+    "items_count": 3
+  },
+  {
+    "order_id": 1002,
+    "customer_name": "Bob Smith",
+    "email": "bob@example.com",
+    "total_amount": 149.50,
+    "status": "processing",
+    "items_count": 1
+  },
+  {
+    "order_id": 1003,
+    "customer_name": "Carol Williams",
+    "email": "carol@example.com",
+    "total_amount": 599.99,
+    "status": "shipped",
+    "items_count": 5
+  },
+  {
+    "order_id": 1004,
+    "customer_name": "David Brown",
+    "email": "david@example.com",
+    "total_amount": 89.99,
+    "status": "completed",
+    "items_count": 2
+  },
+  {
+    "order_id": 1005,
+    "customer_name": "Eve Davis",
+    "email": "eve@example.com",
+    "total_amount": 1249.00,
+    "status": "pending",
+    "items_count": 8
+  },
+  {
+    "order_id": 1006,
+    "customer_name": "Frank Miller",
+    "email": "frank@example.com",
+    "total_amount": 449.99,
+    "status": "completed",
+    "items_count": 4
+  },
+  {
+    "order_id": 1007,
+    "customer_name": "Grace Lee",
+    "email": "grace@example.com",
+    "total_amount": 199.99,
+    "status": "cancelled",
+    "items_count": 1
+  },
+  {
+    "order_id": 1008,
+    "customer_name": "Henry Wilson",
+    "email": "henry@example.com",
+    "total_amount": 799.99,
+    "status": "shipped",
+    "items_count": 6
+  }
+]

@@ -24,41 +24,39 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   }, [isOpen]);
 
-  const handleStartFresh = async () => {
+  // Unified handler for both actions to reduce code duplication
+  const performAction = async (
+    action: () => Promise<void>,
+    successMessage: string,
+    errorMessage: string
+  ) => {
     setIsClearing(true);
     try {
-      await dataCleaner.startFresh({
-        preserveTheme: true,
-        preservePreferences: true,
-      });
-      toast.success('Starting fresh with empty database');
+      await action();
+      toast.success(successMessage);
       onClose();
     } catch (error) {
-      toast.error('Failed to clear data');
+      toast.error(errorMessage);
       console.error(error);
       setIsClearing(false);
       setActionMode(null);
     }
-    // Note: Page will reload from startFresh(), so we don't reset state here
+    // Note: Page will reload from the action, so we don't reset state here on success
   };
 
-  const handleResetDefault = async () => {
-    setIsClearing(true);
-    try {
-      await dataCleaner.clearAllData({
-        preserveTheme: true,
-        preservePreferences: true,
-      });
-      toast.success('Data reset to default successfully');
-      onClose();
-    } catch (error) {
-      toast.error('Failed to reset data');
-      console.error(error);
-      setIsClearing(false);
-      setActionMode(null);
-    }
-    // Note: Page will reload from clearAllData(), so we don't reset state here
-  };
+  const handleStartFresh = () =>
+    performAction(
+      () => dataCleaner.startFresh({ preserveTheme: true, preservePreferences: true }),
+      'Starting fresh with empty database',
+      'Failed to clear data'
+    );
+
+  const handleResetDefault = () =>
+    performAction(
+      () => dataCleaner.clearAllData({ preserveTheme: true, preservePreferences: true }),
+      'Data reset to default successfully',
+      'Failed to reset data'
+    );
 
   const handleAction = () => {
     if (actionMode === 'start-fresh') {

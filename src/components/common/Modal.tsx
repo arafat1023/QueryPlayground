@@ -45,16 +45,17 @@ export function Modal({
 
   // Add/remove event listeners
   useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      // Prevent body scroll when modal is open
-      document.body.style.overflow = 'hidden';
-    }
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.addEventListener('keydown', handleEscape);
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      // Restore body scroll
-      document.body.style.overflow = '';
+      // Restore body scroll to its original value
+      document.body.style.overflow = originalOverflow;
     };
   }, [isOpen, handleEscape]);
 

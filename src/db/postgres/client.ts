@@ -102,21 +102,29 @@ export function isPostgresReady(): boolean {
 /**
  * Reset the PostgreSQL database (clear all data)
  * WARNING: This will delete all tables and data
+ *
+ * Note: We drop all tables instead of deleting the database because
+ * PGlite uses fsBundle which would restore default data on re-initialization.
  */
 export async function resetPostgresDatabase(): Promise<void> {
-  if (db) {
-    await db.close();
-    db = null;
-    initPromise = null;
+  const client = await getPostgresClient();
+
+  try {
+    // Get all table names
+    const result = await client.query(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+      AND table_type = 'BASE TABLE';
+    `);
+
+    // Drop all tables with CASCADE to handle dependencies
+    for (const row of result.rows) {
+      const tableName = (row as { table_name: string }).table_name;
+      await client.query(`DROP TABLE IF EXISTS "${tableName}" CASCADE;`);
+    }
+  } catch (error) {
+    // If there's an error (like no tables exist), that's fine
+    console.debug('Error dropping tables (may be empty):', error);
   }
-
-  // Delete the IndexedDB database
-  await new Promise<void>((resolve, reject) => {
-    const request = indexedDB.deleteDatabase('queryplayground-pg');
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-
-  // Re-initialize
-  await getPostgresClient();
 }

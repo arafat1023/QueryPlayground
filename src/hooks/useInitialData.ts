@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { STORAGE_KEYS, setStorageItem, getStorageItem } from '@/utils/storage';
 import { loadDefaultPostgresData, resetPostgresData } from '@/db/postgres/defaultData';
 import { loadDefaultMongoData, resetMongoData } from '@/db/mongodb/defaultData';
@@ -18,7 +18,7 @@ interface UseInitialDataReturn {
 /**
  * Hook for managing initial data loading on first visit
  * - Detects first visit from localStorage
- * - Loads default data asynchronously on first visit
+ * - Loads default data when user clicks "Get Started"
  * - Manages welcome modal display
  * - Provides reset to default functionality
  */
@@ -27,12 +27,47 @@ export function useInitialData({ isPostgresReady }: UseInitialDataOptions): UseI
   const [showWelcome, setShowWelcome] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  // Use ref to track if data should be loaded on dismiss
+  const shouldLoadDataOnDismiss = useRef<boolean>(false);
+
   /**
-   * Dismiss the welcome modal
+   * Load default data
+   * Called when user clicks "Get Started" or when resetting
+   */
+  const loadData = useCallback(async () => {
+    if (!isPostgresReady) {
+      console.log('PostgreSQL not ready, waiting...');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await Promise.all([
+        loadDefaultPostgresData(),
+        Promise.resolve(loadDefaultMongoData()),
+      ]);
+      // Mark as visited after data loads successfully
+      setStorageItem(STORAGE_KEYS.FIRST_VISIT, 'true');
+      console.log('Default data loaded successfully');
+    } catch (error) {
+      console.error('Failed to load default data:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isPostgresReady]);
+
+  /**
+   * Dismiss the welcome modal and load data if on first visit
    */
   const dismissWelcome = useCallback(() => {
     setShowWelcome(false);
-  }, []);
+    // Load data when user clicks "Get Started" (using ref to avoid closure issues)
+    if (shouldLoadDataOnDismiss.current) {
+      loadData();
+      shouldLoadDataOnDismiss.current = false;
+    }
+  }, [loadData]);
 
   /**
    * Reset all data to default
@@ -55,37 +90,19 @@ export function useInitialData({ isPostgresReady }: UseInitialDataOptions): UseI
   }, []);
 
   /**
-   * Load default data on first visit
-   * Waits for PostgreSQL to be ready before loading
+   * Check for first visit and show welcome modal
+   * Does NOT load data automatically - only when user clicks "Get Started"
    */
   useEffect(() => {
-    const initializeData = async () => {
+    const checkFirstVisit = () => {
       try {
         const hasVisited = getStorageItem(STORAGE_KEYS.FIRST_VISIT);
 
         if (!hasVisited) {
-          // First visit - show welcome immediately
+          // First visit - show welcome modal
           setIsFirstVisit(true);
           setShowWelcome(true);
-
-          // Wait for PostgreSQL to be ready before loading data
-          if (!isPostgresReady) {
-            return; // Will retry when isPostgresReady changes
-          }
-
-          // Load data asynchronously (don't block UI)
-          Promise.all([
-            loadDefaultPostgresData(),
-            Promise.resolve(loadDefaultMongoData()),
-          ]).then(() => {
-            // Mark as visited after data loads
-            setStorageItem(STORAGE_KEYS.FIRST_VISIT, 'true');
-            console.log('Default data loaded successfully');
-          }).catch((error) => {
-            console.error('Failed to load default data:', error);
-            // Still mark as visited even if loading failed
-            setStorageItem(STORAGE_KEYS.FIRST_VISIT, 'true');
-          });
+          shouldLoadDataOnDismiss.current = true;
         }
       } catch (error) {
         console.error('Error checking first visit status:', error);
@@ -93,8 +110,8 @@ export function useInitialData({ isPostgresReady }: UseInitialDataOptions): UseI
       }
     };
 
-    initializeData();
-  }, [isPostgresReady]);
+    checkFirstVisit();
+  }, []);
 
   return {
     isFirstVisit,

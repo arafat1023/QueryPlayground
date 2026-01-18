@@ -1,11 +1,14 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast, Toaster } from 'sonner';
 import { usePostgres } from './hooks/usePostgres';
 import { useMongoDB } from './hooks/useMongoDB';
 import { useQueryExecution } from './hooks/useQueryExecution';
+import { useInitialData } from './hooks/useInitialData';
 import { useEditorStore } from './store/editorStore';
 import { useUIStore } from './store/uiStore';
 import { MainLayout } from './components/layout/MainLayout';
+import { WelcomeModal } from './components/common/WelcomeModal';
+import { ResetConfirmModal } from './components/common/ResetConfirmModal';
 import type { QueryResult } from './types';
 import type { DatabaseMode } from './types/editor';
 
@@ -21,6 +24,16 @@ function App() {
 
   const { content, setDefaultQuery } = useEditorStore();
   const { activeDatabase, setActiveDatabase } = useUIStore();
+
+  // Initial data management (first visit, default data loading)
+  // Wait for PostgreSQL to be ready before loading default data
+  const { showWelcome, dismissWelcome, resetToDefault } = useInitialData({
+    isPostgresReady: pgReady,
+  });
+
+  // Reset confirmation modal state
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   // Get current database status
   const isReady = activeDatabase === 'postgresql' ? pgReady : mongoReady;
@@ -52,6 +65,30 @@ function App() {
     [setActiveDatabase, setDefaultQuery, clearResult]
   );
 
+  // Handle reset to default button click
+  const handleResetToDefault = useCallback(() => {
+    setShowResetConfirm(true);
+  }, []);
+
+  // Confirm and execute reset
+  const confirmReset = useCallback(async () => {
+    setIsResetting(true);
+    try {
+      await resetToDefault();
+      toast.success('Data reset to default successfully');
+      setShowResetConfirm(false);
+      // Clear previous results and refresh schema
+      clearResult();
+      // Trigger schema refresh by setting a timestamp that useSchema can watch
+      window.dispatchEvent(new CustomEvent('schema-refresh'));
+    } catch (error) {
+      toast.error('Failed to reset data');
+      console.error('Reset error:', error);
+    } finally {
+      setIsResetting(false);
+    }
+  }, [resetToDefault, clearResult]);
+
   // Set default query on initial load based on active database
   useEffect(() => {
     setDefaultQuery(activeDatabase);
@@ -60,6 +97,13 @@ function App() {
 
   return (
     <>
+      <WelcomeModal isOpen={showWelcome} onClose={dismissWelcome} />
+      <ResetConfirmModal
+        isOpen={showResetConfirm}
+        onClose={() => setShowResetConfirm(false)}
+        onConfirm={confirmReset}
+        isLoading={isResetting}
+      />
       <MainLayout
         isRunning={isRunning}
         result={result}
@@ -67,6 +111,7 @@ function App() {
         onDatabaseChange={handleDatabaseChange}
         isReady={isReady}
         isLoading={isLoading}
+        onResetToDefault={handleResetToDefault}
       />
       <Toaster
         position="bottom-right"

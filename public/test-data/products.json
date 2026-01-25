@@ -1,0 +1,86 @@
+[
+  {
+    "_id": "prod_001",
+    "name": "Laptop",
+    "category": "Electronics",
+    "price": 999.99,
+    "stock": 45,
+    "tags": ["computer", "portable", "work"],
+    "specs": {
+      "cpu": "Intel i7",
+      "ram": "16GB",
+      "storage": "512GB SSD"
+    },
+    "available": true
+  },
+  {
+    "_id": "prod_002",
+    "name": "Wireless Mouse",
+    "category": "Accessories",
+    "price": 29.99,
+    "stock": 150,
+    "tags": ["wireless", "peripheral", "office"],
+    "specs": {
+      "battery": "AAA",
+      "dpi": "1600",
+      "connection": "USB"
+    },
+    "available": true
+  },
+  {
+    "_id": "prod_003",
+    "name": "Mechanical Keyboard",
+    "category": "Accessories",
+    "price": 129.99,
+    "stock": 30,
+    "tags": ["mechanical", "gaming", "rgb"],
+    "specs": {
+      "switch": "Cherry MX Red",
+      "backlight": "RGB",
+      "layout": "TKL"
+    },
+    "available": true
+  },
+  {
+    "_id": "prod_004",
+    "name": "Monitor 27\"",
+    "category": "Electronics",
+    "price": 349.99,
+    "stock": 0,
+    "tags": ["display", "4k", "ips"],
+    "specs": {
+      "resolution": "3840x2160",
+      "panel": "IPS",
+      "refresh_rate": "60Hz"
+    },
+    "available": false
+  },
+  {
+    "_id": "prod_005",
+    "name": "USB-C Hub",
+    "category": "Accessories",
+    "price": 49.99,
+    "stock": 75,
+    "tags": ["hub", "usb-c", "docking"],
+    "specs": {
+      "ports": "7",
+      "power_delivery": "100W",
+      "connection": "USB-C"
+    },
+    "available": true
+  },
+  {
+    "_id": "prod_006",
+    "name": "Webcam HD",
+    "category": "Electronics",
+    "price": 79.99,
+    "stock": 20,
+    "tags": ["camera", "video", "streaming"],
+    "specs": {
+      "resolution": "1080p",
+      "fps": "30",
+      "connection": "USB"
+    },
+    "available": true
+  }
+]

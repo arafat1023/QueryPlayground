@@ -1,27 +1,38 @@
-import { Database, RefreshCw, AlertCircle } from 'lucide-react';
+import { Database, RefreshCw, AlertCircle, HardDrive } from 'lucide-react';
+import { useState, useCallback } from 'react';
 import { useUIStore } from '@/store/uiStore';
 import { useEditorStore } from '@/store/editorStore';
 import { useSchema } from '@/hooks/useSchema';
 import { TableList } from './TableList';
 import { CollectionList } from './CollectionList';
+import { ImportDataModal } from './ImportDataModal';
+import { WorkspaceImportModal } from './WorkspaceImportModal';
+import { ExportMenu } from './ExportMenu';
 
 interface SchemaExplorerProps {
   onResetToDefault?: () => void;
-  onImportData?: () => void;
 }
 
 /**
  * Main schema explorer component that displays tables/collections
  * Automatically switches between PostgreSQL and MongoDB views
  */
-export function SchemaExplorer({ onResetToDefault, onImportData }: SchemaExplorerProps) {
-  const { activeDatabase } = useUIStore();
+export function SchemaExplorer({ onResetToDefault }: SchemaExplorerProps) {
+  const { activeDatabase, setActiveTable, setActiveCollection } = useUIStore();
   const { content, setContent } = useEditorStore();
   const { data, isLoading, error, refresh } = useSchema();
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showWorkspaceImportModal, setShowWorkspaceImportModal] = useState(false);
+
+  // Memoize modal close handlers to prevent unnecessary re-renders
+  const handleCloseImportModal = useCallback(() => setShowImportModal(false), []);
+  const handleCloseWorkspaceImportModal = useCallback(() => setShowWorkspaceImportModal(false), []);
 
   const isPostgres = activeDatabase === 'postgresql';
 
   const handleTableClick = (tableName: string) => {
+    // Set active table for export functionality
+    setActiveTable(tableName);
     // Insert table name into editor
     const newText = `SELECT * FROM ${tableName};`;
     setContent(newText);
@@ -33,6 +44,8 @@ export function SchemaExplorer({ onResetToDefault, onImportData }: SchemaExplore
   };
 
   const handleCollectionClick = (collectionName: string) => {
+    // Set active collection for export functionality
+    setActiveCollection(collectionName);
     // Insert collection query into editor
     const newText = `db.${collectionName}.find({})`;
     setContent(newText);
@@ -102,22 +115,40 @@ export function SchemaExplorer({ onResetToDefault, onImportData }: SchemaExplore
       {/* Footer actions */}
       <div className="p-2 border-t border-gray-200 dark:border-gray-800 space-y-1">
         <button
-          onClick={onImportData}
+          onClick={() => setShowImportModal(true)}
           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
         >
           <Database className="w-4 h-4" />
           <span>Import Data</span>
         </button>
-        {onResetToDefault && (
-          <button
-            onClick={onResetToDefault}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-          >
-            <RefreshCw className="w-4 h-4" />
-            <span>Reset to Default</span>
-          </button>
-        )}
+
+        <button
+          onClick={() => setShowWorkspaceImportModal(true)}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+        >
+          <HardDrive className="w-4 h-4" />
+          <span>Import Workspace</span>
+        </button>
+
+        <div className="flex gap-1">
+          <ExportMenu />
+          {onResetToDefault && (
+            <button
+              onClick={onResetToDefault}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>Reset</span>
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Import Modal */}
+      <ImportDataModal isOpen={showImportModal} onClose={handleCloseImportModal} />
+
+      {/* Workspace Import Modal */}
+      <WorkspaceImportModal isOpen={showWorkspaceImportModal} onClose={handleCloseWorkspaceImportModal} />
     </div>
   );
 }

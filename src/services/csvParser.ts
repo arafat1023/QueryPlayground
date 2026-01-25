@@ -135,27 +135,6 @@ export function generateCreateTableSQL(
 }
 
 /**
- * Generate INSERT statements from data
- */
-export function generateInsertSQL(
-  tableName: string,
-  data: Record<string, unknown>[],
-  columns: string[]
-): string[] {
-  return data.map((row) => {
-    const values = columns.map((col) => {
-      const val = row[col];
-      if (val === null || val === '') return 'NULL';
-      if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
-      if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
-      return String(val);
-    });
-
-    return `INSERT INTO "${tableName}" ("${columns.join('", "')}") VALUES (${values.join(', ')});`;
-  });
-}
-
-/**
  * Convert CSV data to MongoDB documents
  */
 export function convertCSVToMongoDocuments(

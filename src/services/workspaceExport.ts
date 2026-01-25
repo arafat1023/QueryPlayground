@@ -2,6 +2,33 @@ import { executePostgresQuery } from '@/db/postgres/client';
 import { getCollection, getCollectionNames, insertMany, clearAllCollections } from '@/db/mongodb/queryExecutor';
 import { STORAGE_KEYS } from '@/utils/storage';
 
+// PostgreSQL identifier max length
+const MAX_IDENTIFIER_LENGTH = 63;
+
+// Valid PostgreSQL identifier pattern: letter or underscore followed by alphanumeric/underscore
+const VALID_IDENTIFIER_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+
+/**
+ * Validates a PostgreSQL table/column name to prevent SQL injection from backup files.
+ * Only allows alphanumeric characters and underscores, starting with letter or underscore.
+ * @throws Error if the identifier is invalid
+ */
+function validateIdentifier(name: string, identifierType: 'table' | 'column' = 'table'): void {
+  if (!name || name.trim().length === 0) {
+    throw new Error(`${identifierType} name cannot be empty`);
+  }
+
+  if (name.length > MAX_IDENTIFIER_LENGTH) {
+    throw new Error(`${identifierType} name cannot exceed ${MAX_IDENTIFIER_LENGTH} characters`);
+  }
+
+  if (!VALID_IDENTIFIER_PATTERN.test(name)) {
+    throw new Error(
+      `${identifierType} name "${name}" contains invalid characters. Only letters, numbers, and underscores are allowed, and must start with a letter or underscore`
+    );
+  }
+}
+
 export interface WorkspaceBackup {
   version: string;
   exportedAt: string;
@@ -167,6 +194,14 @@ export async function importWorkspace(
   // Import PostgreSQL tables
   for (const table of backup.postgres.tables) {
     try {
+      // Validate table name to prevent SQL injection
+      validateIdentifier(table.name, 'table');
+
+      // Validate all column names
+      for (const col of table.schema) {
+        validateIdentifier(col.column_name, 'column');
+      }
+
       // Drop existing table if any
       await executePostgresQuery(`DROP TABLE IF EXISTS "${table.name}" CASCADE;`);
 
@@ -181,20 +216,19 @@ export async function importWorkspace(
         );
       `);
 
-      // Insert data
+      // Insert data using parameterized queries (each row separately due to pg-lite limitations)
       for (const row of table.data) {
         const columns = Object.keys(row);
         const values = Object.values(row).map((v) => {
-          if (v === null) return 'NULL';
-          if (typeof v === 'string') return `'${String(v).replace(/'/g, "''")}'`;
-          if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
-          return String(v);
+          // Let the driver handle type conversion, ensure empty strings become null
+          return v === '' ? null : v;
         });
+        const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
 
-        await executePostgresQuery(`
-          INSERT INTO "${table.name}" ("${columns.join('", "')}")
-          VALUES (${values.join(', ')});
-        `);
+        await executePostgresQuery(
+          `INSERT INTO "${table.name}" ("${columns.join('", "')}") VALUES (${placeholders});`,
+          values
+        );
       }
 
       tableCount++;

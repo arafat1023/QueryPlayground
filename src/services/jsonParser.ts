@@ -168,18 +168,33 @@ export function inferPostgresTypesFromJSON(
   });
 
   return Object.entries(columnTypes).map(([name, types]) => {
-    const typeArray = Array.from(types);
+    const nonNullTypes = new Set(types);
+    nonNullTypes.delete('null');
 
-    // Determine the most appropriate type
-    if (typeArray.includes('text')) {
+    if (nonNullTypes.size === 0) {
       return { name, type: 'TEXT' };
     }
-    if (typeArray.includes('numeric') && !typeArray.includes('integer')) {
+
+    const hasText = nonNullTypes.has('text');
+    const hasNumeric = nonNullTypes.has('numeric');
+    const hasInteger = nonNullTypes.has('integer');
+    const hasBoolean = nonNullTypes.has('boolean');
+
+    // Type hierarchy: TEXT > NUMERIC > INTEGER > BOOLEAN
+    // Any mix that doesn't fit a clear promotion path defaults to TEXT
+    if (hasText || (hasInteger && hasBoolean) || (hasNumeric && hasBoolean)) {
+      return { name, type: 'TEXT' };
+    }
+    if (hasNumeric) {
       return { name, type: 'NUMERIC' };
     }
-    if (typeArray.includes('boolean')) {
+    if (hasInteger) {
+      return { name, type: 'INTEGER' };
+    }
+    if (hasBoolean) {
       return { name, type: 'BOOLEAN' };
     }
-    return { name, type: 'TEXT' };
+
+    return { name, type: 'TEXT' }; // Fallback for other cases
   });
 }

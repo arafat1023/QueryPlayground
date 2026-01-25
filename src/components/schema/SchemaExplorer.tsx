@@ -1,5 +1,5 @@
 import { Database, RefreshCw, AlertCircle, HardDrive } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useUIStore } from '@/store/uiStore';
 import { useEditorStore } from '@/store/editorStore';
 import { useSchema } from '@/hooks/useSchema';
@@ -23,6 +23,10 @@ export function SchemaExplorer({ onResetToDefault }: SchemaExplorerProps) {
   const { data, isLoading, error, refresh } = useSchema();
   const [showImportModal, setShowImportModal] = useState(false);
   const [showWorkspaceImportModal, setShowWorkspaceImportModal] = useState(false);
+
+  // Memoize modal close handlers to prevent unnecessary re-renders
+  const handleCloseImportModal = useCallback(() => setShowImportModal(false), []);
+  const handleCloseWorkspaceImportModal = useCallback(() => setShowWorkspaceImportModal(false), []);
 
   const isPostgres = activeDatabase === 'postgresql';
 
@@ -141,10 +145,10 @@ export function SchemaExplorer({ onResetToDefault }: SchemaExplorerProps) {
       </div>
 
       {/* Import Modal */}
-      <ImportDataModal isOpen={showImportModal} onClose={() => setShowImportModal(false)} />
+      <ImportDataModal isOpen={showImportModal} onClose={handleCloseImportModal} />
 
       {/* Workspace Import Modal */}
-      <WorkspaceImportModal isOpen={showWorkspaceImportModal} onClose={() => setShowWorkspaceImportModal(false)} />
+      <WorkspaceImportModal isOpen={showWorkspaceImportModal} onClose={handleCloseWorkspaceImportModal} />
     </div>
   );
 }

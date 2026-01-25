@@ -141,13 +141,7 @@ export function ImportDataModal({ isOpen, onClose }: ImportDataModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch existing tables/collections when modal opens or import mode changes
-  useEffect(() => {
-    if (isOpen && (importMode === 'append' || importMode === 'replace')) {
-      fetchExistingTargets();
-    }
-  }, [isOpen, importMode, activeDatabase]);
-
-  const fetchExistingTargets = async () => {
+  const fetchExistingTargets = useCallback(async () => {
     try {
       if (activeDatabase === 'postgresql') {
         const result = await executePostgresQuery(`
@@ -165,7 +159,13 @@ export function ImportDataModal({ isOpen, onClose }: ImportDataModalProps) {
     } catch (err) {
       console.error('Failed to fetch existing targets:', err);
     }
-  };
+  }, [activeDatabase]);
+
+  useEffect(() => {
+    if (isOpen && (importMode === 'append' || importMode === 'replace')) {
+      fetchExistingTargets();
+    }
+  }, [isOpen, importMode, fetchExistingTargets]);
 
   // Get existing schema for validation (PostgreSQL only)
   const getExistingSchema = async (targetTable: string) => {

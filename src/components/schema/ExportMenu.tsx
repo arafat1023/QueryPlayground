@@ -31,33 +31,16 @@ export function ExportMenu() {
     };
   }, [isOpen]);
 
-  const handleExportTableCSV = async () => {
+  // Generic handler for PostgreSQL table exports
+  const handleExportTable = async (format: 'csv' | 'json') => {
     if (!activeTable) return;
     setIsExporting(true);
     try {
       const result = await executePostgresQuery(`SELECT * FROM "${activeTable}"`);
       if (result.success && result.rows) {
-        exportToCSV(result.rows, `${activeTable}.csv`);
-        toast.success(`Exported ${activeTable} as CSV`);
-        setIsOpen(false);
-      } else {
-        toast.error(result.error || 'Failed to export table');
-      }
-    } catch (error) {
-      toast.error(`Export failed: ${(error as Error).message}`);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleExportTableJSON = async () => {
-    if (!activeTable) return;
-    setIsExporting(true);
-    try {
-      const result = await executePostgresQuery(`SELECT * FROM "${activeTable}"`);
-      if (result.success && result.rows) {
-        exportToJSON(result.rows, `${activeTable}.json`);
-        toast.success(`Exported ${activeTable} as JSON`);
+        const exportFn = format === 'csv' ? exportToCSV : exportToJSON;
+        exportFn(result.rows, `${activeTable}.${format}`);
+        toast.success(`Exported ${activeTable} as ${format.toUpperCase()}`);
         setIsOpen(false);
       } else {
         toast.error(result.error || 'Failed to export table');
@@ -122,7 +105,7 @@ export function ExportMenu() {
             {activeDatabase === 'postgresql' && activeTable && (
               <>
                 <button
-                  onClick={handleExportTableCSV}
+                  onClick={() => handleExportTable('csv')}
                   disabled={isExporting}
                   className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
@@ -137,7 +120,7 @@ export function ExportMenu() {
                   </div>
                 </button>
                 <button
-                  onClick={handleExportTableJSON}
+                  onClick={() => handleExportTable('json')}
                   disabled={isExporting}
                   className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >

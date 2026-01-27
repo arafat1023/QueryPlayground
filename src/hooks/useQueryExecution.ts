@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { usePostgres } from './usePostgres';
 import { useMongoDB } from './useMongoDB';
 import { useUIStore } from '../store/uiStore';
+import { useHistoryStore } from '../store/historyStore';
 import type { QueryResult, QueryError } from '../types';
 
 export interface UseQueryExecutionOptions {
@@ -179,6 +180,7 @@ export function useQueryExecution(
   const { executeQuery: executePgQuery } = usePostgres();
   const { executeQuery: executeMongoQuery } = useMongoDB();
   const { activeDatabase } = useUIStore();
+  const addHistory = useHistoryStore((state) => state.addHistory);
 
   const [isRunning, setIsRunning] = useState(false);
   const [lastResult, setLastResult] = useState<QueryResult | null>(null);
@@ -343,6 +345,12 @@ export function useQueryExecution(
 
         setLastResult(result);
 
+        addHistory({
+          query,
+          database: activeDatabase,
+          success: result.success,
+        });
+
         // Handle callbacks using ref
         if (result.success) {
           optionsRef.current.onSuccess?.(result);
@@ -358,7 +366,7 @@ export function useQueryExecution(
         setIsRunning(false);
       }
     },
-    [executePostgresStatements, executeMongoStatement, activeDatabase, lastResult]
+    [executePostgresStatements, executeMongoStatement, activeDatabase, lastResult, addHistory]
   );
 
   const clearResult = useCallback(() => {

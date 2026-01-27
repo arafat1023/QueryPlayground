@@ -3,6 +3,7 @@ import { Menu, Settings, Sparkles } from 'lucide-react';
 import { DatabaseSwitch } from '@/components/common/DatabaseSwitch';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { SettingsModal } from '@/components/common/SettingsModal';
+import { AIPanel } from '@/components/ai/AIPanel';
 import { StorageIndicator } from '@/components/common/StorageIndicator';
 import { useUIStore } from '@/store/uiStore';
 import type { DatabaseMode } from '@/types/editor';
@@ -14,6 +15,7 @@ interface HeaderProps {
 export function Header({onDatabaseChange}: HeaderProps) {
   const {activeDatabase, toggleSidebar} = useUIStore();
   const [showSettings, setShowSettings] = useState(false);
+  const [showAI, setShowAI] = useState(false);
 
   const handleDatabaseSwitch = (db: DatabaseMode) => {
     onDatabaseChange?.(db);
@@ -58,9 +60,10 @@ export function Header({onDatabaseChange}: HeaderProps) {
         {/* Right section: AI, Storage, Settings, Theme */}
         <div className="flex items-center gap-1">
           <button
+            onClick={() => setShowAI(true)}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"
             aria-label="AI Assistant"
-            title="AI Assistant (Coming Soon)"
+            title="AI Assistant"
           >
             <Sparkles className="w-5 h-5" />
           </button>
@@ -77,6 +80,7 @@ export function Header({onDatabaseChange}: HeaderProps) {
         </div>
       </header>
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
+      <AIPanel isOpen={showAI} onClose={() => setShowAI(false)} />
     </>
   );
 }

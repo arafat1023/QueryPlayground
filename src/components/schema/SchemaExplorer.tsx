@@ -1,4 +1,4 @@
-import { Database, RefreshCw, AlertCircle, HardDrive } from 'lucide-react';
+import { Database, RefreshCw, AlertCircle, HardDrive, ChevronDown, ChevronRight } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { useUIStore } from '@/store/uiStore';
 import { useEditorStore } from '@/store/editorStore';
@@ -23,6 +23,7 @@ export function SchemaExplorer({ onResetToDefault }: SchemaExplorerProps) {
   const { data, isLoading, error, refresh } = useSchema();
   const [showImportModal, setShowImportModal] = useState(false);
   const [showWorkspaceImportModal, setShowWorkspaceImportModal] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Memoize modal close handlers to prevent unnecessary re-renders
   const handleCloseImportModal = useCallback(() => setShowImportModal(false), []);
@@ -60,7 +61,16 @@ export function SchemaExplorer({ onResetToDefault }: SchemaExplorerProps) {
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-800">
-        <div className="flex items-center gap-2">
+        <button
+          onClick={() => setIsCollapsed((prev) => !prev)}
+          className="flex items-center gap-2 text-left"
+          title={isCollapsed ? 'Expand schema explorer' : 'Collapse schema explorer'}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+          )}
           <Database className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {isPostgres ? 'Tables' : 'Collections'}
@@ -70,7 +80,7 @@ export function SchemaExplorer({ onResetToDefault }: SchemaExplorerProps) {
               ({data.length})
             </span>
           )}
-        </div>
+        </button>
         <button
           onClick={refresh}
           className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors ${
@@ -84,7 +94,7 @@ export function SchemaExplorer({ onResetToDefault }: SchemaExplorerProps) {
       </div>
 
       {/* Error state */}
-      {error && (
+      {!isCollapsed && error && (
         <div className="flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
           <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0" />
           <span className="text-xs text-red-600 dark:text-red-400 flex-1 truncate">
@@ -93,56 +103,60 @@ export function SchemaExplorer({ onResetToDefault }: SchemaExplorerProps) {
         </div>
       )}
 
-      {/* Schema list */}
-      <div className="flex-1 overflow-y-auto">
-        {isPostgres ? (
-          <TableList
-            tables={data as import('@/db/postgres/types').PostgresTableSchema[]}
-            isLoading={isLoading}
-            onTableClick={handleTableClick}
-            onColumnClick={handleColumnClick}
-          />
-        ) : (
-          <CollectionList
-            collections={data as import('@/db/mongodb/types').MongoCollectionSchema[]}
-            isLoading={isLoading}
-            onCollectionClick={handleCollectionClick}
-            onFieldClick={handleFieldClick}
-          />
-        )}
-      </div>
+      {!isCollapsed && (
+        <>
+          {/* Schema list */}
+          <div className="flex-1 overflow-y-auto">
+            {isPostgres ? (
+              <TableList
+                tables={data as import('@/db/postgres/types').PostgresTableSchema[]}
+                isLoading={isLoading}
+                onTableClick={handleTableClick}
+                onColumnClick={handleColumnClick}
+              />
+            ) : (
+              <CollectionList
+                collections={data as import('@/db/mongodb/types').MongoCollectionSchema[]}
+                isLoading={isLoading}
+                onCollectionClick={handleCollectionClick}
+                onFieldClick={handleFieldClick}
+              />
+            )}
+          </div>
 
-      {/* Footer actions */}
-      <div className="p-2 border-t border-gray-200 dark:border-gray-800 space-y-1">
-        <button
-          onClick={() => setShowImportModal(true)}
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-        >
-          <Database className="w-4 h-4" />
-          <span>Import Data</span>
-        </button>
-
-        <button
-          onClick={() => setShowWorkspaceImportModal(true)}
-          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
-        >
-          <HardDrive className="w-4 h-4" />
-          <span>Import Workspace</span>
-        </button>
-
-        <div className="flex gap-1">
-          <ExportMenu />
-          {onResetToDefault && (
+          {/* Footer actions */}
+          <div className="p-2 border-t border-gray-200 dark:border-gray-800 space-y-1">
             <button
-              onClick={onResetToDefault}
-              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+              onClick={() => setShowImportModal(true)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
             >
-              <RefreshCw className="w-4 h-4" />
-              <span>Reset</span>
+              <Database className="w-4 h-4" />
+              <span>Import Data</span>
             </button>
-          )}
-        </div>
-      </div>
+
+            <button
+              onClick={() => setShowWorkspaceImportModal(true)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+            >
+              <HardDrive className="w-4 h-4" />
+              <span>Import Workspace</span>
+            </button>
+
+            <div className="flex gap-1">
+              <ExportMenu />
+              {onResetToDefault && (
+                <button
+                  onClick={onResetToDefault}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>Reset</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Import Modal */}
       <ImportDataModal isOpen={showImportModal} onClose={handleCloseImportModal} />

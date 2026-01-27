@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Bookmark, Pencil, Trash2, Check, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { useHistoryStore } from '@/store/historyStore';
 import { useEditorStore } from '@/store/editorStore';
@@ -23,17 +23,11 @@ function SavedQueryRow({ item, onSelect, onDelete, onRename }: SavedQueryRowProp
     setIsEditing(false);
   };
 
-  return (
-    <div
-      className="group flex items-start gap-2 px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 rounded-md"
-      onClick={() => {
-        if (!isEditing) onSelect(item);
-      }}
-      title={!isEditing ? 'Load query' : undefined}
-    >
-      <div className="flex-1 text-left min-w-0">
-        {isEditing ? (
-          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+  if (isEditing) {
+    return (
+      <div className="group flex items-start gap-2 px-2 py-2 rounded-md">
+        <div className="flex-1 text-left min-w-0">
+          <div className="flex items-center gap-2">
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -41,18 +35,14 @@ function SavedQueryRow({ item, onSelect, onDelete, onRename }: SavedQueryRowProp
               autoFocus
             />
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSave();
-              }}
+              onClick={handleSave}
               className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
               title="Save name"
             >
               <Check className="w-3.5 h-3.5 text-green-600" />
             </button>
             <button
-              onClick={(e) => {
-                e.stopPropagation();
+              onClick={() => {
                 setIsEditing(false);
                 setName(item.name);
               }}
@@ -62,46 +52,42 @@ function SavedQueryRow({ item, onSelect, onDelete, onRename }: SavedQueryRowProp
               <X className="w-3.5 h-3.5 text-gray-500" />
             </button>
           </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
-                {item.name}
-              </span>
-            </div>
-            <div className="mt-1 text-[10px] text-gray-500 dark:text-gray-400 font-mono truncate">
-              {item.query.replace(/\s+/g, ' ').trim()}
-            </div>
-          </>
-        )}
-      </div>
-
-      {!isEditing && (
-        <div className="flex items-center gap-1">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsEditing(true);
-            }}
-            className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            title="Edit name"
-            aria-label="Edit saved query name"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(item.id);
-            }}
-            className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-            title="Delete"
-            aria-label="Delete saved query"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="group flex items-start gap-2 px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 rounded-md">
+      <button onClick={() => onSelect(item)} className="flex-1 text-left min-w-0" title="Load query">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+            {item.name}
+          </span>
+        </div>
+        <div className="mt-1 text-[10px] text-gray-500 dark:text-gray-400 font-mono truncate">
+          {item.query.replace(/\s+/g, ' ').trim()}
+        </div>
+      </button>
+
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => setIsEditing(true)}
+          className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          title="Edit name"
+          aria-label="Edit saved query name"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={() => onDelete(item.id)}
+          className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          title="Delete"
+          aria-label="Delete saved query"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
     </div>
   );
 }
@@ -112,8 +98,18 @@ export function SavedQueries() {
   const { setActiveDatabase } = useUIStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const pgQueries = savedQueries.filter((q) => q.database === 'postgresql');
-  const mongoQueries = savedQueries.filter((q) => q.database === 'mongodb');
+  const { pgQueries, mongoQueries } = useMemo(() => {
+    const pg: SavedQuery[] = [];
+    const mongo: SavedQuery[] = [];
+    savedQueries.forEach((q) => {
+      if (q.database === 'postgresql') {
+        pg.push(q);
+      } else {
+        mongo.push(q);
+      }
+    });
+    return { pgQueries: pg, mongoQueries: mongo };
+  }, [savedQueries]);
 
   const handleSelect = (item: SavedQuery) => {
     setActiveDatabase(item.database);

@@ -24,27 +24,20 @@ const generateId = () => {
   return `id_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 };
 
-const loadHistory = (): QueryHistoryItem[] => {
-  const raw = getStorageItem(HISTORY_KEY);
+const loadFromStorage = <T>(key: string): T[] => {
+  const raw = getStorageItem(key);
   if (!raw) return [];
   try {
-    const parsed = JSON.parse(raw) as QueryHistoryItem[];
+    const parsed = JSON.parse(raw) as T[];
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
 };
 
-const loadSavedQueries = (): SavedQuery[] => {
-  const raw = getStorageItem(SAVED_KEY);
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw) as SavedQuery[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-};
+const loadHistory = (): QueryHistoryItem[] => loadFromStorage<QueryHistoryItem>(HISTORY_KEY);
+
+const loadSavedQueries = (): SavedQuery[] => loadFromStorage<SavedQuery>(SAVED_KEY);
 
 const persistHistory = (history: QueryHistoryItem[]) => {
   setStorageItem(HISTORY_KEY, JSON.stringify(history));

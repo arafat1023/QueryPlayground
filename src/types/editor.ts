@@ -26,6 +26,19 @@ export interface QueryHistoryItem {
   success: boolean;
 }
 
+export type NewHistoryEntry = Omit<QueryHistoryItem, 'id' | 'timestamp'> & {
+  timestamp?: number;
+};
+
+export interface SavedQuery {
+  id: string;
+  name: string;
+  query: string;
+  database: DatabaseMode;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface QueryEditorProps {
   mode: DatabaseMode;
   value: string;

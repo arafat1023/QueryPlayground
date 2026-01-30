@@ -94,7 +94,7 @@ export function HintPanel() {
         <div className="space-y-2">
           {hints.map((hint, index) => (
             <div
-              key={index}
+              key={`${hint}-${index}`}
               className="flex gap-2 text-xs text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-md p-3"
             >
               <Lightbulb className="w-4 h-4 text-amber-500 mt-0.5" />

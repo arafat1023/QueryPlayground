@@ -1,6 +1,7 @@
 import { Sparkles } from 'lucide-react';
 import { Modal } from '@/components/common/Modal';
 import { ApiKeyInput } from './ApiKeyInput';
+import { QuestionGenerator } from './QuestionGenerator';
 import { useAIStore } from '@/store/aiStore';
 import { QueryExplainer } from './QueryExplainer';
 import { NLToQuery } from './NLToQuery';
@@ -10,15 +11,20 @@ import { HintPanel } from './HintPanel';
 interface AIPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  onStartPractice?: () => void;
 }
 
-export function AIPanel({ isOpen, onClose }: AIPanelProps) {
+export function AIPanel({ isOpen, onClose, onStartPractice }: AIPanelProps) {
   const apiKey = useAIStore((state) => state.apiKey);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="AI Assistant" size="lg">
       <div className="space-y-6">
         <ApiKeyInput />
+
+        <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
+          <QuestionGenerator onStartPractice={onStartPractice} />
+        </div>
 
         <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
           <div className="flex items-center gap-2 mb-4">

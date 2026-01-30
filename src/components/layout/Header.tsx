@@ -4,6 +4,7 @@ import { DatabaseSwitch } from '@/components/common/DatabaseSwitch';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { SettingsModal } from '@/components/common/SettingsModal';
 import { AIPanel } from '@/components/ai/AIPanel';
+import { PracticeMode } from '@/components/ai/PracticeMode';
 import { StorageIndicator } from '@/components/common/StorageIndicator';
 import { useUIStore } from '@/store/uiStore';
 import type { DatabaseMode } from '@/types/editor';
@@ -16,9 +17,15 @@ export function Header({onDatabaseChange}: HeaderProps) {
   const {activeDatabase, toggleSidebar} = useUIStore();
   const [showSettings, setShowSettings] = useState(false);
   const [showAI, setShowAI] = useState(false);
+  const [showPractice, setShowPractice] = useState(false);
 
   const handleDatabaseSwitch = (db: DatabaseMode) => {
     onDatabaseChange?.(db);
+  };
+
+  const handleStartPractice = () => {
+    setShowAI(false);
+    setShowPractice(true);
   };
 
   return (
@@ -80,7 +87,8 @@ export function Header({onDatabaseChange}: HeaderProps) {
         </div>
       </header>
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
-      <AIPanel isOpen={showAI} onClose={() => setShowAI(false)} />
+      <AIPanel isOpen={showAI} onClose={() => setShowAI(false)} onStartPractice={handleStartPractice} />
+      <PracticeMode isOpen={showPractice} onClose={() => setShowPractice(false)} />
     </>
   );
 }

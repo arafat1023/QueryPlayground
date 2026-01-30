@@ -31,6 +31,9 @@ export const STORAGE_KEYS = {
   // Query History (Branch 12)
   QUERY_HISTORY: 'qp_query_history',
   SAVED_QUERIES: 'qp_saved_queries',
+
+  // Practice Mode (Branch 15)
+  PRACTICE_PROGRESS: 'qp_practice',
 } as const;
 
 /**

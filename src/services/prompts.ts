@@ -18,7 +18,7 @@ export function formatSchemaForPrompt(schema: SchemaData, dbType: DatabaseMode):
             const flags = [
               column.isPrimaryKey ? 'PK' : null,
               column.isForeignKey ? 'FK' : null,
-              column.nullable ? 'nullable' : 'not null',
+              column.nullable ? 'NULL' : 'NOT NULL',
             ]
               .filter(Boolean)
               .join(', ');

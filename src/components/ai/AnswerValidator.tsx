@@ -56,7 +56,12 @@ export function AnswerValidator() {
       try {
         const json = JSON.parse(response) as ValidationResult;
         setParsedResult(json);
-      } catch {
+      } catch (parseError) {
+        setError(
+          `AI returned invalid JSON: ${
+            parseError instanceof Error ? parseError.message : 'Unknown parsing error'
+          }`
+        );
         setParsedResult(null);
       }
     } catch (err) {
@@ -107,7 +112,7 @@ export function AnswerValidator() {
           {parsedResult.issues && parsedResult.issues.length > 0 && (
             <ul className="text-xs text-gray-600 dark:text-gray-300 list-disc pl-4">
               {parsedResult.issues.map((issue, index) => (
-                <li key={index}>{issue}</li>
+                <li key={`${issue}-${index}`}>{issue}</li>
               ))}
             </ul>
           )}

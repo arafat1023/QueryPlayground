@@ -3,6 +3,10 @@ import { Modal } from '@/components/common/Modal';
 import { ApiKeyInput } from './ApiKeyInput';
 import { QuestionGenerator } from './QuestionGenerator';
 import { useAIStore } from '@/store/aiStore';
+import { QueryExplainer } from './QueryExplainer';
+import { NLToQuery } from './NLToQuery';
+import { AnswerValidator } from './AnswerValidator';
+import { HintPanel } from './HintPanel';
 
 interface AIPanelProps {
   isOpen: boolean;
@@ -23,35 +27,24 @@ export function AIPanel({ isOpen, onClose, onStartPractice }: AIPanelProps) {
         </div>
 
         <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-4 h-4 text-purple-500" />
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
               AI Features
             </h3>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {[
-              'Generate practice questions',
-              'Explain current query',
-              'Natural language to query',
-              'Validate your answer',
-            ].map((feature) => (
-              <div
-                key={feature}
-                className={`rounded-md border px-3 py-2 text-xs ${
-                  apiKey
-                    ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-800/50 dark:bg-green-900/20 dark:text-green-200'
-                    : 'border-gray-200 bg-gray-50 text-gray-500 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400'
-                }`}
-              >
-                {feature}
-              </div>
-            ))}
-          </div>
-          {!apiKey && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
-              Add an API key to unlock AI features in the next step.
-            </p>
+
+          {!apiKey ? (
+            <div className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-md p-4">
+              Add your API key to unlock AI features.
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <QueryExplainer />
+              <NLToQuery />
+              <AnswerValidator />
+              <HintPanel />
+            </div>
           )}
         </div>
       </div>

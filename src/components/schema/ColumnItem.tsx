@@ -76,7 +76,7 @@ export function ColumnItem({ column, dbType, onClick }: ColumnItemProps) {
       title={column.name}
     >
       {/* Key icon for all columns */}
-      <Key className="w-3 h-3 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+      <Key className="w-3 h-3 text-gray-400 dark:text-gray-400 flex-shrink-0" />
 
       {/* Column name */}
       <span className="flex-1 truncate font-mono text-gray-700 dark:text-gray-300">

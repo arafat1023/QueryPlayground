@@ -33,7 +33,7 @@ function ShortcutRow({ entry }: { entry: ShortcutEntry }) {
       <div className="flex items-center gap-1">
         {entry.keys.map((key, i) => (
           <span key={i}>
-            {i > 0 && <span className="text-gray-400 dark:text-gray-500 mx-0.5">+</span>}
+            {i > 0 && <span className="text-gray-400 dark:text-gray-400 mx-0.5">+</span>}
             <kbd className="inline-flex items-center justify-center min-w-[28px] h-7 px-2 text-xs font-mono font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm">
               {key}
             </kbd>
@@ -77,7 +77,7 @@ export function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShortcutsMod
         </div>
 
         {/* Hint */}
-        <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+        <p className="text-xs text-gray-400 dark:text-gray-400 text-center">
           On macOS, use Cmd instead of Ctrl
         </p>
       </div>

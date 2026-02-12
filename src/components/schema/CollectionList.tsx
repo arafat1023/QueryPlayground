@@ -31,7 +31,7 @@ export function CollectionList({
       <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
         <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
           <svg
-            className="w-8 h-8 text-gray-400 dark:text-gray-500"
+            className="w-8 h-8 text-gray-400 dark:text-gray-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

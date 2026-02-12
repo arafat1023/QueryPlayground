@@ -28,7 +28,7 @@ export function DifficultySelector({ value, onChange, disabled }: DifficultySele
           } ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
         >
           <div className="font-semibold">{option.label}</div>
-          <div className="text-[11px] text-gray-500 dark:text-gray-500">{option.description}</div>
+          <div className="text-[11px] text-gray-500 dark:text-gray-400">{option.description}</div>
         </button>
       ))}
     </div>

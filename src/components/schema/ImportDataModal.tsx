@@ -801,7 +801,7 @@ export function ImportDataModal({ isOpen, onClose }: ImportDataModalProps) {
           <div className="text-center py-8">
             <Database className="w-12 h-12 mx-auto mb-4 text-blue-500 animate-pulse" />
             <p className="text-gray-600 dark:text-gray-400">Importing data...</p>
-            <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
               This may take a moment for large files
             </p>
           </div>

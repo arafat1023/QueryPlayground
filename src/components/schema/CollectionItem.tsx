@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Braces } from 'lucide-react';
+import { ChevronDown, ChevronRight, Braces, ArrowRightToLine } from 'lucide-react';
 import type { MongoCollectionSchema } from '@/db/mongodb/types';
 import { ColumnItem, ColumnItemSkeleton } from './ColumnItem';
 
@@ -21,8 +21,12 @@ export function CollectionItem({
 }: CollectionItemProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
-  const handleCollectionClick = () => {
+  const handleToggleExpand = () => {
     setIsExpanded(!isExpanded);
+  };
+
+  const handleInsertQuery = (e: React.MouseEvent) => {
+    e.stopPropagation();
     onCollectionClick?.(collection.name);
   };
 
@@ -30,16 +34,14 @@ export function CollectionItem({
     <div className="border-b border-gray-100 dark:border-gray-800 last:border-b-0">
       {/* Collection header */}
       <div
-        className={`flex items-center gap-2 px-2 py-1.5 cursor-pointer transition-colors ${
-          onCollectionClick ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50' : ''
-        }`}
-        onClick={handleCollectionClick}
+        className="group flex items-center gap-2 px-2 py-1.5 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50"
+        onClick={handleToggleExpand}
       >
         {/* Expand/collapse icon */}
         {isExpanded ? (
-          <ChevronDown className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+          <ChevronDown className="w-3.5 h-3.5 text-gray-400 dark:text-gray-400 flex-shrink-0" />
         ) : (
-          <ChevronRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-gray-400 dark:text-gray-400 flex-shrink-0" />
         )}
 
         {/* Collection icon */}
@@ -50,8 +52,20 @@ export function CollectionItem({
           {collection.name}
         </span>
 
+        {/* Insert query button */}
+        {onCollectionClick && (
+          <button
+            onClick={handleInsertQuery}
+            className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-500 dark:text-purple-400 transition-all min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 flex items-center justify-center"
+            title={`Insert db.${collection.name}.find({})`}
+            aria-label={`Insert query for ${collection.name}`}
+          >
+            <ArrowRightToLine className="w-3.5 h-3.5" />
+          </button>
+        )}
+
         {/* Document count badge */}
-        <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono">
+        <span className="text-[10px] text-gray-400 dark:text-gray-400 font-mono">
           {collection.count} docs
         </span>
       </div>
@@ -64,7 +78,7 @@ export function CollectionItem({
               <ColumnItem key={field.name} column={field} dbType="mongodb" onClick={onFieldClick} />
             ))
           ) : (
-            <div className="px-2 py-2 text-xs text-gray-400 dark:text-gray-500 italic">
+            <div className="px-2 py-2 text-xs text-gray-400 dark:text-gray-400 italic">
               No fields (empty collection)
             </div>
           )}

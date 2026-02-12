@@ -23,6 +23,7 @@ export function ResultsPanel({ result, isRunning }: ResultsPanelProps) {
   const { activeDatabase } = useUIStore();
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [dismissedError, setDismissedError] = useState(false);
+  const [resultsFilter, setResultsFilter] = useState('');
 
   // Reset view mode when database changes
   useEffect(() => {
@@ -90,7 +91,7 @@ export function ResultsPanel({ result, isRunning }: ResultsPanelProps) {
   const isMongoDB = activeDatabase === 'mongodb';
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
+    <div className="h-full flex flex-col bg-white dark:bg-gray-900 overflow-hidden" aria-live="polite">
       {/* Toolbar */}
       <ResultsToolbar
         rowCount={result.rowCount || rows.length}
@@ -99,6 +100,8 @@ export function ResultsPanel({ result, isRunning }: ResultsPanelProps) {
         onViewModeChange={setViewMode}
         rows={rows}
         isMongoDB={isMongoDB}
+        filterValue={resultsFilter}
+        onFilterChange={setResultsFilter}
       />
 
       {/* Content */}
@@ -106,7 +109,7 @@ export function ResultsPanel({ result, isRunning }: ResultsPanelProps) {
         {isMongoDB || viewMode === 'json' ? (
           <JsonView data={rows} />
         ) : (
-          <TableView rows={rows} />
+          <TableView rows={rows} globalFilter={resultsFilter} />
         )}
       </div>
     </div>

@@ -1,4 +1,5 @@
-import { Clock, Table2, Code, Download, Copy } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Clock, Table2, Code, Download, Copy, Braces } from 'lucide-react';
 import { copyTableAsCSV, copyTableAsJSON, exportToCSV, exportToJSON } from '@/utils/exportUtils';
 import { toast } from 'sonner';
 
@@ -9,6 +10,8 @@ interface ResultsToolbarProps {
   onViewModeChange: (mode: 'table' | 'json') => void;
   rows?: unknown[];
   isMongoDB?: boolean;
+  filterValue?: string;
+  onFilterChange?: (value: string) => void;
 }
 
 /**
@@ -23,14 +26,30 @@ export function ResultsToolbar({
   rows = [],
   isMongoDB = false,
 }: ResultsToolbarProps) {
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showExportMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showExportMenu]);
+
   const handleExportCSV = () => {
     exportToCSV(rows, `query-results-${Date.now()}.csv`);
     toast.success('Exported to CSV');
+    setShowExportMenu(false);
   };
 
   const handleExportJSON = () => {
     exportToJSON(rows, `query-results-${Date.now()}.json`);
     toast.success('Exported to JSON');
+    setShowExportMenu(false);
   };
 
   const handleCopyAsCSV = async () => {
@@ -40,6 +59,7 @@ export function ResultsToolbar({
     } else {
       toast.error('Failed to copy');
     }
+    setShowExportMenu(false);
   };
 
   const handleCopyAsJSON = async () => {
@@ -49,6 +69,7 @@ export function ResultsToolbar({
     } else {
       toast.error('Failed to copy');
     }
+    setShowExportMenu(false);
   };
 
   return (
@@ -56,9 +77,15 @@ export function ResultsToolbar({
       {/* Left side: Title and stats */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
-          <Table2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          {viewMode === 'json' ? (
+            <Code className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          ) : isMongoDB ? (
+            <Braces className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          ) : (
+            <Table2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          )}
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Results
+            {isMongoDB ? 'Documents' : viewMode === 'json' ? 'JSON' : 'Table'}
           </span>
         </div>
 
@@ -105,49 +132,55 @@ export function ResultsToolbar({
 
         {/* Export dropdown */}
         {rows.length > 0 && (
-          <div className="relative group">
-            <button className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors" aria-label="Export results">
+          <div className="relative" ref={exportMenuRef}>
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+              aria-label="Export results"
+            >
               <Download className="w-3.5 h-3.5" />
               Export
             </button>
 
             {/* Dropdown menu */}
-            <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-              <div className="py-1">
-                {!isMongoDB && (
-                  <>
-                    <button
-                      onClick={handleExportCSV}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Export as CSV
-                    </button>
-                    <button
-                      onClick={handleCopyAsCSV}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                      Copy as CSV
-                    </button>
-                  </>
-                )}
-                <button
-                  onClick={handleExportJSON}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Export as JSON
-                </button>
-                <button
-                  onClick={handleCopyAsJSON}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  Copy as JSON
-                </button>
+            {showExportMenu && (
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+                <div className="py-1">
+                  {!isMongoDB && (
+                    <>
+                      <button
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Export as CSV
+                      </button>
+                      <button
+                        onClick={handleCopyAsCSV}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        Copy as CSV
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={handleExportJSON}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Export as JSON
+                  </button>
+                  <button
+                    onClick={handleCopyAsJSON}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    Copy as JSON
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>

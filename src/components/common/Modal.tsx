@@ -10,6 +10,7 @@ interface ModalProps {
   children: React.ReactNode;
   size?: ModalSize;
   showCloseButton?: boolean;
+  closeOnBackdrop?: boolean;
 }
 
 const sizeStyles: Record<ModalSize, string> = {
@@ -34,6 +35,7 @@ export function Modal({
   children,
   size = 'md',
   showCloseButton = true,
+  closeOnBackdrop = true,
 }: ModalProps) {
   const [mounted, setMounted] = useState(false);
   const [animState, setAnimState] = useState<'enter' | 'visible' | 'exit'>('enter');
@@ -106,7 +108,7 @@ export function Modal({
       {/* Backdrop */}
       <div
         className={`absolute inset-0 bg-black/50 backdrop-blur-sm ${backdropClass}`}
-        onClick={onClose}
+        onClick={closeOnBackdrop ? onClose : undefined}
         aria-hidden="true"
       />
 

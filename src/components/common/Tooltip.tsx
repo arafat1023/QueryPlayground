@@ -11,6 +11,8 @@ interface TooltipProps {
   children: ReactNode;
   /** Additional className for the wrapper */
   className?: string;
+  /** Enable multiline mode for long content */
+  multiline?: boolean;
 }
 
 /**
@@ -22,16 +24,17 @@ export function Tooltip({
   position = 'bottom',
   children,
   className = '',
+  multiline = false,
 }: TooltipProps) {
   const positionClass = position === 'top' ? 'tooltip-top' : 'tooltip-bottom';
+  const multilineClass = multiline ? 'tooltip-multiline' : '';
 
   return (
     <div className={`tooltip-container inline-flex ${className}`}>
       {children}
-      <span className={`tooltip-content ${positionClass}`} role="tooltip">
+      <span className={`tooltip-content ${positionClass} ${multilineClass}`} role="tooltip">
         {label}
       </span>
     </div>
   );
 }
-

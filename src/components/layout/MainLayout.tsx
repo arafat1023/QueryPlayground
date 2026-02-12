@@ -3,6 +3,7 @@ import { Panel, Group, Separator } from 'react-resizable-panels';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { ContentArea } from './ContentArea';
+import { StatusBar } from './StatusBar';
 import { useUIStore } from '@/store/uiStore';
 import { debounce } from '@/utils/debounce';
 import type { DatabaseMode } from '@/types/editor';
@@ -12,6 +13,7 @@ interface MainLayoutProps {
   isRunning: boolean;
   result: QueryResult | null;
   onRun: () => void;
+  onCancel?: () => void;
   onDatabaseChange: (db: DatabaseMode) => void;
   isReady: boolean;
   isLoading?: boolean;
@@ -22,6 +24,7 @@ export function MainLayout({
   isRunning,
   result,
   onRun,
+  onCancel,
   onDatabaseChange,
   isReady,
   isLoading,
@@ -52,6 +55,7 @@ export function MainLayout({
 
   return (
     <div className="h-screen flex flex-col bg-gray-100 dark:bg-gray-950 overflow-hidden">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg">Skip to editor</a>
       {/* Header */}
       <Header onDatabaseChange={onDatabaseChange} />
 
@@ -95,12 +99,16 @@ export function MainLayout({
               isRunning={isRunning}
               result={result}
               onRun={onRun}
+              onCancel={onCancel}
               isReady={isReady}
               isLoading={isLoading}
             />
           </Panel>
         </Group>
       </div>
+
+      {/* Status Bar */}
+      <StatusBar isReady={isReady} isRunning={isRunning} />
 
       {/* Mobile Sidebar Overlay */}
       <MobileSidebar onResetToDefault={onResetToDefault} />

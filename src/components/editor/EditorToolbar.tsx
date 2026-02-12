@@ -1,5 +1,6 @@
-import { Play, Trash2, Save, Database } from 'lucide-react';
+import { Play, Trash2, Save, Database, Square } from 'lucide-react';
 import { Tooltip } from '@/components/common/Tooltip';
+import { useEditorStore } from '@/store/editorStore';
 import type { EditorToolbarProps } from '@/types/editor';
 
 /**
@@ -8,17 +9,19 @@ import type { EditorToolbarProps } from '@/types/editor';
  * Features:
  * - Run button with loading state
  * - Clear button to reset editor
- * - Save button (disabled placeholder for future)
+ * - Save button with unsaved changes indicator
  * - Mode indicator badge
  * - Keyboard shortcut hints
  */
 export function EditorToolbar({
   onRun,
+  onCancel,
   onClear,
   onSave,
   isRunning = false,
   mode,
 }: EditorToolbarProps) {
+  const isDirty = useEditorStore((s) => s.isDirty);
   const modeLabel = mode === 'postgresql' ? 'PostgreSQL' : 'MongoDB';
   const modeColor =
     mode === 'postgresql'
@@ -55,44 +58,50 @@ export function EditorToolbar({
           </button>
         </Tooltip>
 
-        {/* Save button */}
+        {/* Save button with unsaved changes indicator */}
         {onSave && (
-          <Tooltip label="Save query (Ctrl+S)">
+          <Tooltip label={isDirty ? 'Save query (unsaved changes) (Ctrl+S)' : 'Save query (Ctrl+S)'}>
             <button
               onClick={onSave}
               disabled={isRunning}
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
+              className="relative px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center gap-2"
               aria-label="Save query"
             >
               <Save className="w-4 h-4" />
+              {isDirty && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-orange-500 border-2 border-white dark:border-gray-700" />
+              )}
             </button>
           </Tooltip>
         )}
 
-        {/* Run button */}
-        <Tooltip label="Run query (Ctrl+Enter)">
-          <button
-            onClick={onRun}
-            disabled={isRunning}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
-              mode === 'postgresql'
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-purple-600 text-white hover:bg-purple-700'
-            }`}
-          >
-            {isRunning ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span className="hidden sm:inline">Running...</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-4 h-4" />
-                <span className="hidden sm:inline">Run Query</span>
-              </>
-            )}
-          </button>
-        </Tooltip>
+        {/* Run / Cancel button */}
+        {isRunning && onCancel ? (
+          <Tooltip label="Cancel query">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 bg-red-600 text-white hover:bg-red-700"
+            >
+              <Square className="w-4 h-4" />
+              <span className="hidden sm:inline">Cancel</span>
+            </button>
+          </Tooltip>
+        ) : (
+          <Tooltip label="Run query (Ctrl+Enter)">
+            <button
+              onClick={onRun}
+              disabled={isRunning}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
+                mode === 'postgresql'
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-purple-600 text-white hover:bg-purple-700'
+              }`}
+            >
+              <Play className="w-4 h-4" />
+              <span className="hidden sm:inline">Run Query</span>
+            </button>
+          </Tooltip>
+        )}
       </div>
     </div>
   );

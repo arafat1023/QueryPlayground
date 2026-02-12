@@ -12,6 +12,7 @@ export interface UseQueryExecutionOptions {
 
 export interface UseQueryExecutionReturn {
   executeQuery: (query: string) => Promise<QueryResult | null>;
+  cancelQuery: () => void;
   isRunning: boolean;
   lastResult: QueryResult | null;
   clearResult: () => void;
@@ -187,6 +188,7 @@ export function useQueryExecution(
 
   // Use ref for concurrency check to avoid dependency in useCallback
   const isRunningRef = useRef(false);
+  const cancelledRef = useRef(false);
   // Keep options in a ref to avoid dependency on callbacks
   const optionsRef = useRef(options);
   useEffect(() => {
@@ -296,6 +298,22 @@ export function useQueryExecution(
   );
 
   /**
+   * Cancel a running query
+   */
+  const cancelQuery = useCallback(() => {
+    if (isRunningRef.current) {
+      cancelledRef.current = true;
+      isRunningRef.current = false;
+      setIsRunning(false);
+      setLastResult({
+        success: false,
+        error: { message: 'Query cancelled by user' },
+        executionTime: 0,
+      });
+    }
+  }, []);
+
+  /**
    * Main execute query function with debouncing
    */
   const executeQuery = useCallback(
@@ -330,6 +348,7 @@ export function useQueryExecution(
       }
 
       isRunningRef.current = true;
+      cancelledRef.current = false;
       setIsRunning(true);
       lastExecutionTime.current = now;
 
@@ -341,6 +360,11 @@ export function useQueryExecution(
           result = await executePostgresStatements(query);
         } else {
           result = await executeMongoStatement(query);
+        }
+
+        // If cancelled while running, discard result
+        if (cancelledRef.current) {
+          return lastResult;
         }
 
         setLastResult(result);
@@ -362,8 +386,10 @@ export function useQueryExecution(
 
         return result;
       } finally {
-        isRunningRef.current = false;
-        setIsRunning(false);
+        if (!cancelledRef.current) {
+          isRunningRef.current = false;
+          setIsRunning(false);
+        }
       }
     },
     [executePostgresStatements, executeMongoStatement, activeDatabase, lastResult, addHistory]
@@ -375,6 +401,7 @@ export function useQueryExecution(
 
   return {
     executeQuery,
+    cancelQuery,
     isRunning,
     lastResult,
     clearResult,

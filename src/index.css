@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@config '../tailwind.config.js';
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   /* Light Theme Colors (default) */
@@ -71,12 +73,24 @@ body {
 
 /* Panel resize handle styles for v4 (uses data-separator) */
 [data-separator] {
-  transition: background-color 150ms ease;
+  position: relative;
+  transition: background-color 100ms ease;
 }
 
-[data-separator]:hover,
-[data-separator]:active {
+/* Ensure children don't steal pointer events from the separator */
+[data-separator]>* {
+  pointer-events: none;
+}
+
+/* Hover & active dragging: highlight the inner line blue */
+[data-separator]:hover>div,
+[data-separator][data-separator="active"]>div {
   background-color: rgb(59 130 246) !important;
+}
+
+/* While actively dragging, subtle blue tint on background */
+[data-separator][data-separator="active"] {
+  background-color: rgba(59, 130, 246, 0.08);
 }
 
 /* Scrollbar styles */
@@ -110,10 +124,12 @@ body {
 .modal-backdrop-enter {
   opacity: 0;
 }
+
 .modal-backdrop-visible {
   opacity: 1;
   transition: opacity 200ms ease-out;
 }
+
 .modal-backdrop-exit {
   opacity: 0;
   transition: opacity 150ms ease-in;
@@ -123,11 +139,13 @@ body {
   opacity: 0;
   transform: scale(0.95) translateY(8px);
 }
+
 .modal-content-visible {
   opacity: 1;
   transform: scale(1) translateY(0);
   transition: opacity 200ms ease-out, transform 200ms ease-out;
 }
+
 .modal-content-exit {
   opacity: 0;
   transform: scale(0.95) translateY(8px);
@@ -138,10 +156,12 @@ body {
 .sidebar-slide-enter {
   transform: translateX(-100%);
 }
+
 .sidebar-slide-visible {
   transform: translateX(0);
   transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .sidebar-slide-exit {
   transform: translateX(-100%);
   transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -149,18 +169,34 @@ body {
 
 /* ── Skeleton pulse ── */
 @keyframes skeleton-pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
+
 .skeleton-pulse {
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
 /* ── Theme toggle rotation ── */
 @keyframes theme-spin-in {
-  from { transform: rotate(-90deg); opacity: 0; }
-  to { transform: rotate(0deg); opacity: 1; }
+  from {
+    transform: rotate(-90deg);
+    opacity: 0;
+  }
+
+  to {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
 }
+
 .theme-icon-enter {
   animation: theme-spin-in 300ms ease-out;
 }
@@ -169,6 +205,7 @@ body {
 .tooltip-container {
   position: relative;
 }
+
 .tooltip-content {
   position: absolute;
   z-index: 100;
@@ -185,29 +222,35 @@ body {
   transform: translateY(2px);
   transition: opacity 150ms ease, transform 150ms ease;
 }
+
 .dark .tooltip-content {
   background: rgb(51 65 85);
   color: rgb(248 250 252);
 }
+
 .tooltip-container:hover .tooltip-content,
 .tooltip-container:focus-within .tooltip-content {
   opacity: 1;
   transform: translateY(0);
 }
+
 .tooltip-bottom {
   top: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%) translateY(2px);
 }
+
 .tooltip-container:hover .tooltip-bottom,
 .tooltip-container:focus-within .tooltip-bottom {
   transform: translateX(-50%) translateY(0);
 }
+
 .tooltip-top {
   bottom: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%) translateY(-2px);
 }
+
 .tooltip-container:hover .tooltip-top,
 .tooltip-container:focus-within .tooltip-top {
   transform: translateX(-50%) translateY(0);

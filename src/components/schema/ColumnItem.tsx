@@ -118,9 +118,9 @@ export function ColumnItem({ column, dbType, onClick }: ColumnItemProps) {
 export function ColumnItemSkeleton() {
   return (
     <div className="flex items-center gap-2 px-2 py-1">
-      <div className="w-3 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-      <div className="flex-1 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-      <div className="w-12 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+      <div className="w-3 h-3 bg-gray-200 dark:bg-gray-700 rounded skeleton-pulse" />
+      <div className="flex-1 h-3 bg-gray-200 dark:bg-gray-700 rounded skeleton-pulse" />
+      <div className="w-12 h-3 bg-gray-200 dark:bg-gray-700 rounded skeleton-pulse" />
     </div>
   );
 }

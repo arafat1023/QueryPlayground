@@ -23,7 +23,8 @@ export function QueryHistory() {
         <button
           onClick={() => setIsCollapsed((prev) => !prev)}
           className="flex items-center gap-2 text-left"
-          title={isCollapsed ? 'Expand history' : 'Collapse history'}
+          aria-label={isCollapsed ? 'Expand history' : 'Collapse history'}
+          aria-expanded={!isCollapsed}
         >
           {isCollapsed ? (
             <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
@@ -39,7 +40,7 @@ export function QueryHistory() {
         {history.length > 0 && (
           <button
             onClick={clearHistory}
-            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400"
+            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors"
             title="Clear history"
             aria-label="Clear history"
           >

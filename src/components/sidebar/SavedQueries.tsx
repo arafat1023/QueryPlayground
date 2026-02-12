@@ -36,7 +36,7 @@ function SavedQueryRow({ item, onSelect, onDelete, onRename }: SavedQueryRowProp
             />
             <button
               onClick={handleSave}
-              className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+              className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               title="Save name"
             >
               <Check className="w-3.5 h-3.5 text-green-600" />
@@ -46,7 +46,7 @@ function SavedQueryRow({ item, onSelect, onDelete, onRename }: SavedQueryRowProp
                 setIsEditing(false);
                 setName(item.name);
               }}
-              className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+              className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               title="Cancel"
             >
               <X className="w-3.5 h-3.5 text-gray-500" />
@@ -58,7 +58,7 @@ function SavedQueryRow({ item, onSelect, onDelete, onRename }: SavedQueryRowProp
   }
 
   return (
-    <div className="group flex items-start gap-2 px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 rounded-md">
+    <div className="group flex items-start gap-2 px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 rounded-md transition-colors">
       <button onClick={() => onSelect(item)} className="flex-1 text-left min-w-0" title="Load query">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
@@ -122,7 +122,8 @@ export function SavedQueries() {
         <button
           onClick={() => setIsCollapsed((prev) => !prev)}
           className="flex items-center gap-2 text-left"
-          title={isCollapsed ? 'Expand saved queries' : 'Collapse saved queries'}
+          aria-label={isCollapsed ? 'Expand saved queries' : 'Collapse saved queries'}
+          aria-expanded={!isCollapsed}
         >
           {isCollapsed ? (
             <ChevronRight className="w-3.5 h-3.5 text-gray-400" />

@@ -26,7 +26,7 @@ export function HistoryItem({ item, onSelect, onDelete }: HistoryItemProps) {
   const statusColor = item.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
 
   return (
-    <div className="group flex items-start gap-2 px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 rounded-md">
+    <div className="group flex items-start gap-2 px-2 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/60 rounded-md transition-colors">
       <button
         onClick={() => onSelect(item)}
         className="flex-1 text-left min-w-0"

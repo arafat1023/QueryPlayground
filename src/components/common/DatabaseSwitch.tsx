@@ -9,7 +9,7 @@ interface DatabaseSwitchProps {
 
 export function DatabaseSwitch({ activeDatabase, onSwitch, className = '' }: DatabaseSwitchProps) {
   return (
-    <div className={`flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg ${className}`}>
+    <div className={`flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg ${className}`} role="group" aria-label="Database mode switcher">
       <button
         onClick={() => onSwitch('postgresql')}
         className={`

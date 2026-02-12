@@ -8,7 +8,7 @@ interface SidebarProps {
 
 export function Sidebar({ onResetToDefault }: SidebarProps) {
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
+    <aside className="h-full flex flex-col bg-white dark:bg-gray-900 overflow-hidden" role="complementary" aria-label="Sidebar">
       {/* Schema Explorer Section */}
       <div className="flex-1 flex flex-col min-h-0">
         <SchemaExplorer onResetToDefault={onResetToDefault} />
@@ -19,6 +19,6 @@ export function Sidebar({ onResetToDefault }: SidebarProps) {
 
       {/* Query History Section */}
       <QueryHistory />
-    </div>
+    </aside>
   );
 }

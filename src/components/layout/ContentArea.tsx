@@ -36,6 +36,7 @@ export function ContentArea({ isRunning, result, onRun, isReady, isLoading }: Co
         orientation="vertical"
         onLayoutChange={handlePanelResize}
         style={{height: '100%', width: '100%'}}
+        role="main"
       >
         {/* Editor Panel */}
         <Panel id="editor" defaultSize={'' + panelSizes.editor} minSize="20">
@@ -92,12 +93,14 @@ export function ContentArea({ isRunning, result, onRun, isReady, isLoading }: Co
 
         {/* Resize Handle */}
         <Separator
+          className="group"
           style={{
             height: '4px',
-            backgroundColor: '#e5e7eb',
             cursor: 'row-resize',
           }}
-        />
+        >
+          <div className="h-full bg-gray-200 dark:bg-gray-700 group-hover:bg-blue-500 transition-colors" />
+        </Separator>
 
         {/* Results Panel */}
         <Panel id="results" minSize="15">

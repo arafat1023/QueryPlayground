@@ -1,4 +1,4 @@
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {Panel, Group, Separator} from 'react-resizable-panels';
 import {Header} from './Header';
 import {Sidebar} from './Sidebar';
@@ -79,7 +79,7 @@ export function MainLayout({
                   position: 'relative',
                 }}
               >
-                <div className="h-full w-1 bg-gray-200 group-hover:bg-blue-500 transition-colors mx-auto" />
+                <div className="h-full w-1 bg-gray-200 dark:bg-gray-700 group-hover:bg-blue-500 transition-colors mx-auto" />
               </Separator>
             </>
           )}
@@ -105,19 +105,52 @@ export function MainLayout({
 
 function MobileSidebar({ onResetToDefault }: { onResetToDefault?: () => void }) {
   const {sidebarCollapsed, setSidebarCollapsed} = useUIStore();
+  const [mounted, setMounted] = useState(false);
+  const [animState, setAnimState] = useState<'enter' | 'visible' | 'exit'>('enter');
 
-  if (sidebarCollapsed) return null;
+  useEffect(() => {
+    if (!sidebarCollapsed) {
+      setMounted(true);
+      setAnimState('enter');
+      const raf = requestAnimationFrame(() => {
+        setAnimState('visible');
+      });
+      return () => cancelAnimationFrame(raf);
+    } else if (mounted) {
+      setAnimState('exit');
+      const timer = setTimeout(() => {
+        setMounted(false);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [sidebarCollapsed]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!mounted) return null;
+
+  const backdropClass =
+    animState === 'enter'
+      ? 'modal-backdrop-enter'
+      : animState === 'visible'
+        ? 'modal-backdrop-visible'
+        : 'modal-backdrop-exit';
+
+  const sidebarClass =
+    animState === 'enter'
+      ? 'sidebar-slide-enter'
+      : animState === 'visible'
+        ? 'sidebar-slide-visible'
+        : 'sidebar-slide-exit';
 
   return (
     <div className="lg:hidden fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50"
+        className={`absolute inset-0 bg-black/50 ${backdropClass}`}
         onClick={() => setSidebarCollapsed(true)}
       />
 
       {/* Sidebar */}
-      <div className="absolute left-0 top-0 bottom-0 w-72 bg-white dark:bg-gray-900 shadow-xl">
+      <div className={`absolute left-0 top-0 bottom-0 w-72 bg-white dark:bg-gray-900 shadow-xl ${sidebarClass}`}>
         <Sidebar onResetToDefault={onResetToDefault} />
       </div>
     </div>

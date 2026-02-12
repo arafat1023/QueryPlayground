@@ -95,9 +95,9 @@ export function TableView({ rows, onRowClick }: TableViewProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Pagination Controls */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
         <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-          <span>
+          <span className="whitespace-nowrap">
             Rows {startRow}-{endRow} of {totalRows}
           </span>
           <select
@@ -106,6 +106,7 @@ export function TableView({ rows, onRowClick }: TableViewProps) {
               table.setPageSize(Number(e.target.value));
             }}
             className="px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300"
+            aria-label="Rows per page"
           >
             {[10, 25, 50, 100].map((size) => (
               <option key={size} value={size}>
@@ -115,37 +116,45 @@ export function TableView({ rows, onRowClick }: TableViewProps) {
           </select>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           <button
             onClick={() => table.setPageIndex(0)}
             disabled={!table.getCanPreviousPage()}
-            className="px-2 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+            className="px-2 py-1 text-xs text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+            aria-label="First page"
           >
-            First
+            <span className="hidden sm:inline">First</span>
+            <span className="sm:hidden">«</span>
           </button>
           <button
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
-            className="px-2 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+            className="px-2 py-1 text-xs text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+            aria-label="Previous page"
           >
-            Previous
+            <span className="hidden sm:inline">Previous</span>
+            <span className="sm:hidden">‹</span>
           </button>
-          <span className="px-2 text-xs text-gray-600 dark:text-gray-400">
-            Page {pageIndex + 1} of {table.getPageCount()}
+          <span className="px-2 text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
+            {pageIndex + 1}/{table.getPageCount()}
           </span>
           <button
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
-            className="px-2 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+            className="px-2 py-1 text-xs text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+            aria-label="Next page"
           >
-            Next
+            <span className="hidden sm:inline">Next</span>
+            <span className="sm:hidden">›</span>
           </button>
           <button
             onClick={() => table.setPageIndex(table.getPageCount() - 1)}
             disabled={!table.getCanNextPage()}
-            className="px-2 py-1 text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+            className="px-2 py-1 text-xs text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+            aria-label="Last page"
           >
-            Last
+            <span className="hidden sm:inline">Last</span>
+            <span className="sm:hidden">»</span>
           </button>
         </div>
       </div>
@@ -159,7 +168,7 @@ export function TableView({ rows, onRowClick }: TableViewProps) {
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none"
+                    className="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 select-none transition-colors"
                     onClick={header.column.getToggleSortingHandler()}
                   >
                     <div className="flex items-center gap-1">
@@ -211,8 +220,9 @@ export function TableView({ rows, onRowClick }: TableViewProps) {
                       e.stopPropagation();
                       handleCopyRow(row.original);
                     }}
-                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                     title="Copy row"
+                    aria-label="Copy row as JSON"
                   >
                     <Copy className="w-3 h-3" />
                   </button>

@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { useUIStore } from '@/store/uiStore';
 import { useEditorStore } from '@/store/editorStore';
 import { useSchema } from '@/hooks/useSchema';
+import { Tooltip } from '@/components/common/Tooltip';
 import { TableList } from './TableList';
 import { CollectionList } from './CollectionList';
 import { ImportDataModal } from './ImportDataModal';
@@ -64,7 +65,8 @@ export function SchemaExplorer({ onResetToDefault }: SchemaExplorerProps) {
         <button
           onClick={() => setIsCollapsed((prev) => !prev)}
           className="flex items-center gap-2 text-left"
-          title={isCollapsed ? 'Expand schema explorer' : 'Collapse schema explorer'}
+          aria-label={isCollapsed ? 'Expand schema explorer' : 'Collapse schema explorer'}
+          aria-expanded={!isCollapsed}
         >
           {isCollapsed ? (
             <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
@@ -81,16 +83,18 @@ export function SchemaExplorer({ onResetToDefault }: SchemaExplorerProps) {
             </span>
           )}
         </button>
-        <button
-          onClick={refresh}
-          className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors ${
-            isLoading ? 'animate-spin' : ''
-          }`}
-          title="Refresh schema"
-          disabled={isLoading}
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-        </button>
+        <Tooltip label="Refresh schema">
+          <button
+            onClick={refresh}
+            className={`p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors ${
+              isLoading ? 'animate-spin' : ''
+            }`}
+            aria-label="Refresh schema"
+            disabled={isLoading}
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+        </Tooltip>
       </div>
 
       {/* Error state */}

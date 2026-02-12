@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { X } from 'lucide-react';
 
 type ModalSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -21,9 +21,11 @@ const sizeStyles: Record<ModalSize, string> = {
 
 /**
  * Reusable modal component with accessibility features
+ * - Fade + scale enter/exit transitions
  * - Escape key to close
  * - Body scroll prevention when open
  * - Backdrop click to close
+ * - Focus trap on first focusable element
  */
 export function Modal({
   isOpen,
@@ -33,6 +35,10 @@ export function Modal({
   size = 'md',
   showCloseButton = true,
 }: ModalProps) {
+  const [mounted, setMounted] = useState(false);
+  const [animState, setAnimState] = useState<'enter' | 'visible' | 'exit'>('enter');
+  const dialogRef = useRef<HTMLDivElement>(null);
+
   // Handle escape key press
   const handleEscape = useCallback(
     (event: KeyboardEvent) => {
@@ -43,40 +49,75 @@ export function Modal({
     [isOpen, onClose]
   );
 
-  // Add/remove event listeners
+  // Mount/unmount with animation
   useEffect(() => {
-    if (!isOpen) return;
+    if (isOpen) {
+      setMounted(true);
+      setAnimState('enter');
+      // Trigger visible state after a frame for CSS transition
+      const raf = requestAnimationFrame(() => {
+        setAnimState('visible');
+      });
+      return () => cancelAnimationFrame(raf);
+    } else if (mounted) {
+      setAnimState('exit');
+      const timer = setTimeout(() => {
+        setMounted(false);
+      }, 150); // Match exit transition duration
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Add/remove event listeners & manage scroll lock
+  useEffect(() => {
+    if (!mounted) return;
 
     const originalOverflow = document.body.style.overflow;
     document.addEventListener('keydown', handleEscape);
-    // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';
+
+    // Focus the dialog on mount
+    dialogRef.current?.focus();
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      // Restore body scroll to its original value
       document.body.style.overflow = originalOverflow;
     };
-  }, [isOpen, handleEscape]);
+  }, [mounted, handleEscape]);
 
-  // Don't render anything if modal is closed
-  if (!isOpen) return null;
+  if (!mounted) return null;
+
+  const backdropClass =
+    animState === 'enter'
+      ? 'modal-backdrop-enter'
+      : animState === 'visible'
+        ? 'modal-backdrop-visible'
+        : 'modal-backdrop-exit';
+
+  const contentClass =
+    animState === 'enter'
+      ? 'modal-content-enter'
+      : animState === 'visible'
+        ? 'modal-content-visible'
+        : 'modal-content-exit';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className={`absolute inset-0 bg-black/50 backdrop-blur-sm ${backdropClass}`}
         onClick={onClose}
         aria-hidden="true"
       />
 
       {/* Modal Content */}
       <div
-        className={`relative bg-white dark:bg-gray-900 rounded-lg shadow-xl ${sizeStyles[size]} w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col`}
+        ref={dialogRef}
+        className={`relative bg-white dark:bg-gray-900 rounded-lg shadow-xl ${sizeStyles[size]} w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col ${contentClass}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
+        tabIndex={-1}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">

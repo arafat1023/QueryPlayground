@@ -116,7 +116,7 @@ export function QueryEditor({
   const currentTheme = getThemeId(mode, theme);
 
   return (
-    <div className="h-full border border-gray-300 rounded-lg overflow-hidden">
+    <div className="h-full border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden">
       <Editor
         height={height}
         language={getLanguage()}
@@ -126,7 +126,7 @@ export function QueryEditor({
         theme={currentTheme}
         options={editorOptions()}
         loading={
-          <div className="flex items-center justify-center h-full bg-gray-100 text-gray-600">
+          <div className="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
             Loading editor...
           </div>
         }

@@ -84,6 +84,7 @@ export function ResultsToolbar({
                   : 'text-gray-500 dark:text-gray-400'
               }`}
               title="Table view"
+              aria-label="Switch to table view"
             >
               <Table2 className="w-4 h-4" />
             </button>
@@ -95,6 +96,7 @@ export function ResultsToolbar({
                   : 'text-gray-500 dark:text-gray-400'
               }`}
               title="JSON view"
+              aria-label="Switch to JSON view"
             >
               <Code className="w-4 h-4" />
             </button>
@@ -104,7 +106,7 @@ export function ResultsToolbar({
         {/* Export dropdown */}
         {rows.length > 0 && (
           <div className="relative group">
-            <button className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors">
+            <button className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors" aria-label="Export results">
               <Download className="w-3.5 h-3.5" />
               Export
             </button>

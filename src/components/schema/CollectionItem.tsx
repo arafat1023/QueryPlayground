@@ -81,10 +81,10 @@ export function CollectionItemSkeleton() {
   return (
     <div className="border-b border-gray-100 dark:border-gray-800">
       <div className="flex items-center gap-2 px-2 py-1.5">
-        <div className="w-3.5 h-3.5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-        <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-        <div className="flex-1 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-        <div className="w-12 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        <div className="w-3.5 h-3.5 bg-gray-200 dark:bg-gray-700 rounded skeleton-pulse" />
+        <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded skeleton-pulse" />
+        <div className="flex-1 h-4 bg-gray-200 dark:bg-gray-700 rounded skeleton-pulse" />
+        <div className="w-12 h-3 bg-gray-200 dark:bg-gray-700 rounded skeleton-pulse" />
       </div>
       <div className="pl-6 pr-2 pb-1 space-y-0.5">
         <ColumnItemSkeleton />

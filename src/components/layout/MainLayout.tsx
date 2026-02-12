@@ -1,11 +1,12 @@
-import {useEffect, useState} from 'react';
-import {Panel, Group, Separator} from 'react-resizable-panels';
-import {Header} from './Header';
-import {Sidebar} from './Sidebar';
-import {ContentArea} from './ContentArea';
-import {useUIStore} from '@/store/uiStore';
-import type {DatabaseMode} from '@/types/editor';
-import type {QueryResult} from '@/types';
+import { useEffect, useState, useMemo } from 'react';
+import { Panel, Group, Separator } from 'react-resizable-panels';
+import { Header } from './Header';
+import { Sidebar } from './Sidebar';
+import { ContentArea } from './ContentArea';
+import { useUIStore } from '@/store/uiStore';
+import { debounce } from '@/utils/debounce';
+import type { DatabaseMode } from '@/types/editor';
+import type { QueryResult } from '@/types';
 
 interface MainLayoutProps {
   isRunning: boolean;
@@ -26,7 +27,7 @@ export function MainLayout({
   isLoading,
   onResetToDefault,
 }: MainLayoutProps) {
-  const {panelSizes, setPanelSizes, sidebarCollapsed, setSidebarCollapsed} = useUIStore();
+  const { panelSizes, setPanelSizes, sidebarCollapsed, setSidebarCollapsed } = useUIStore();
 
   // Collapse sidebar on mobile by default
   useEffect(() => {
@@ -35,13 +36,19 @@ export function MainLayout({
     }
   }, [setSidebarCollapsed]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSidebarResize = (layout: any) => {
-    const sidebarSize = layout['sidebar'];
-    if (sidebarSize !== undefined) {
-      setPanelSizes({sidebar: sidebarSize});
-    }
-  };
+
+
+  // Debounce the resize handler to prevent excessive re-renders/storage updates
+  const handleSidebarResize = useMemo(
+    () =>
+      debounce((layout: any) => {
+        const sidebarSize = layout['sidebar'];
+        if (sidebarSize !== undefined) {
+          setPanelSizes({ sidebar: sidebarSize });
+        }
+      }, 300),
+    [setPanelSizes]
+  );
 
   return (
     <div className="h-screen flex flex-col bg-gray-100 dark:bg-gray-950 overflow-hidden">
@@ -53,7 +60,7 @@ export function MainLayout({
         <Group
           orientation="horizontal"
           onLayoutChange={handleSidebarResize}
-          style={{height: '100%', width: '100%'}}
+          style={{ height: '100%', width: '100%' }}
         >
           {/* Sidebar Panel - only on large screens */}
           {!sidebarCollapsed && (
@@ -70,16 +77,14 @@ export function MainLayout({
 
               {/* Resize Handle */}
               <Separator
-                className="hidden lg:block group"
+                className="hidden lg:flex items-center justify-center separator-vertical"
                 style={{
-                  width: '4px',
-                  backgroundColor: 'transparent',
+                  width: '12px',
                   cursor: 'col-resize',
                   zIndex: 10,
-                  position: 'relative',
                 }}
               >
-                <div className="h-full w-1 bg-gray-200 dark:bg-gray-700 group-hover:bg-blue-500 transition-colors mx-auto" />
+                <div className="h-full w-[3px] rounded-full bg-gray-300 dark:bg-gray-600 group-hover:bg-blue-500 transition-colors" />
               </Separator>
             </>
           )}
@@ -104,7 +109,7 @@ export function MainLayout({
 }
 
 function MobileSidebar({ onResetToDefault }: { onResetToDefault?: () => void }) {
-  const {sidebarCollapsed, setSidebarCollapsed} = useUIStore();
+  const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
   const [mounted, setMounted] = useState(false);
   const [animState, setAnimState] = useState<'enter' | 'visible' | 'exit'>('enter');
 

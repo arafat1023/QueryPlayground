@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Panel, Group, Separator } from 'react-resizable-panels';
 import { Loader2, Code } from 'lucide-react';
 import { QueryEditor } from '@/components/editor/QueryEditor';
@@ -7,6 +7,7 @@ import { ResultsPanel } from '@/components/results/ResultsPanel';
 import { SaveQueryModal } from '@/components/sidebar/SaveQueryModal';
 import { useEditorStore } from '@/store/editorStore';
 import { useUIStore } from '@/store/uiStore';
+import { debounce } from '@/utils/debounce';
 import type { QueryResult } from '@/types';
 
 interface ContentAreaProps {
@@ -22,20 +23,26 @@ export function ContentArea({ isRunning, result, onRun, isReady, isLoading }: Co
   const { activeDatabase, panelSizes, setPanelSizes } = useUIStore();
   const [showSaveModal, setShowSaveModal] = useState(false);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handlePanelResize = (layout: any) => {
-    const editorSize = layout['editor'];
-    if (editorSize !== undefined) {
-      setPanelSizes({ editor: editorSize });
-    }
-  };
+
+
+  // Debounce the resize handler to prevent excessive re-renders/storage updates
+  const handlePanelResize = useMemo(
+    () =>
+      debounce((layout: any) => {
+        const editorSize = layout['editor'];
+        if (editorSize !== undefined) {
+          setPanelSizes({ editor: editorSize });
+        }
+      }, 300),
+    [setPanelSizes]
+  );
 
   return (
     <>
       <Group
         orientation="vertical"
         onLayoutChange={handlePanelResize}
-        style={{height: '100%', width: '100%'}}
+        style={{ height: '100%', width: '100%' }}
         role="main"
       >
         {/* Editor Panel */}
@@ -93,13 +100,13 @@ export function ContentArea({ isRunning, result, onRun, isReady, isLoading }: Co
 
         {/* Resize Handle */}
         <Separator
-          className="group"
+          className="flex items-center justify-center separator-horizontal"
           style={{
-            height: '4px',
+            height: '10px',
             cursor: 'row-resize',
           }}
         >
-          <div className="h-full bg-gray-200 dark:bg-gray-700 group-hover:bg-blue-500 transition-colors" />
+          <div className="w-full h-[3px] rounded-full bg-gray-300 dark:bg-gray-600 transition-colors" />
         </Separator>
 
         {/* Results Panel */}

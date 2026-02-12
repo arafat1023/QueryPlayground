@@ -31,9 +31,11 @@ export function QueryEditor({
   height = '400px',
   readOnly = false,
   theme = 'light',
+  errorLine,
 }: QueryEditorProps) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
+  const decorationsRef = useRef<string[]>([]);
 
   // Set up keyboard shortcuts
   useEditorKeyboard({editorRef, onRun});
@@ -90,6 +92,28 @@ export function QueryEditor({
     }
   }, [readOnly]);
 
+  // Highlight error line in editor
+  useEffect(() => {
+    if (!editorRef.current || !monacoRef.current) return;
+    const ed = editorRef.current;
+    const monaco = monacoRef.current;
+
+    if (errorLine && errorLine > 0) {
+      decorationsRef.current = ed.deltaDecorations(decorationsRef.current, [
+        {
+          range: new monaco.Range(errorLine, 1, errorLine, 1),
+          options: {
+            isWholeLine: true,
+            className: 'bg-red-100 dark:bg-red-900/30',
+            glyphMarginClassName: 'text-red-500',
+          },
+        },
+      ]);
+    } else {
+      decorationsRef.current = ed.deltaDecorations(decorationsRef.current, []);
+    }
+  }, [errorLine]);
+
   // Memoize editor options
   const editorOptions = useCallback(
     () => ({
@@ -109,6 +133,8 @@ export function QueryEditor({
       cursorStyle: 'line' as const,
       formatOnPaste: true,
       formatOnType: true,
+      accessibilitySupport: 'on' as const,
+      ariaLabel: 'Query editor',
     }),
     [readOnly]
   );

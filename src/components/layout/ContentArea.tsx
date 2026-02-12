@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Panel, Group, Separator } from 'react-resizable-panels';
 import { Loader2, Code } from 'lucide-react';
 import { QueryEditor } from '@/components/editor/QueryEditor';
 import { EditorToolbar } from '@/components/editor/EditorToolbar';
+import { TabBar } from '@/components/editor/TabBar';
 import { ResultsPanel } from '@/components/results/ResultsPanel';
 import { SaveQueryModal } from '@/components/sidebar/SaveQueryModal';
 import { useEditorStore } from '@/store/editorStore';
@@ -14,16 +15,32 @@ interface ContentAreaProps {
   isRunning: boolean;
   result: QueryResult | null;
   onRun: () => void;
+  onCancel?: () => void;
   isReady: boolean;
   isLoading?: boolean;
 }
 
-export function ContentArea({ isRunning, result, onRun, isReady, isLoading }: ContentAreaProps) {
+export function ContentArea({ isRunning, result, onRun, onCancel, isReady, isLoading }: ContentAreaProps) {
   const { content, setContent } = useEditorStore();
-  const { activeDatabase, panelSizes, setPanelSizes } = useUIStore();
+  const activeTabId = useEditorStore(s => s.activeTabId);
+  const tabs = useEditorStore(s => s.tabs);
+  const { activeDatabase, setActiveDatabase, panelSizes, setPanelSizes } = useUIStore();
   const [showSaveModal, setShowSaveModal] = useState(false);
 
+  // Track previous tab to detect tab switches
+  const prevTabIdRef = useRef(activeTabId);
 
+  // Sync activeDatabase when tab changes
+  useEffect(() => {
+    if (prevTabIdRef.current !== activeTabId) {
+      prevTabIdRef.current = activeTabId;
+      const activeTab = tabs.find(t => t.id === activeTabId);
+      if (activeTab && activeTab.database !== activeDatabase) {
+        setActiveDatabase(activeTab.database);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTabId]);
 
   // Debounce the resize handler to prevent excessive re-renders/storage updates
   const handlePanelResize = useMemo(
@@ -40,6 +57,7 @@ export function ContentArea({ isRunning, result, onRun, isReady, isLoading }: Co
   return (
     <>
       <Group
+        id="main-content"
         orientation="vertical"
         onLayoutChange={handlePanelResize}
         style={{ height: '100%', width: '100%' }}
@@ -73,8 +91,11 @@ export function ContentArea({ isRunning, result, onRun, isReady, isLoading }: Co
               )}
             </div>
 
+            {/* Tab Bar */}
+            <TabBar />
+
             {/* Monaco Editor */}
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-hidden relative">
               <QueryEditor
                 mode={activeDatabase}
                 value={content}
@@ -82,13 +103,36 @@ export function ContentArea({ isRunning, result, onRun, isReady, isLoading }: Co
                 onRun={onRun}
                 readOnly={isRunning || !isReady}
                 height="100%"
+                errorLine={result && !result.success && result.error && typeof result.error !== 'string' ? result.error.line : undefined}
               />
+              {/* Placeholder overlay when editor is empty */}
+              {!content && (
+                <div className="absolute inset-0 flex items-start pt-3 pl-16 pointer-events-none z-[1]">
+                  <span className="text-sm text-gray-400 dark:text-gray-500 italic">
+                    {activeDatabase === 'postgresql'
+                      ? 'Write a SQL query... (Ctrl+Enter to run)'
+                      : 'Write a MongoDB query... (Ctrl+Enter to run)'}
+                  </span>
+                </div>
+              )}
+              {/* Database loading overlay */}
+              {!isReady && (
+                <div className="absolute inset-0 bg-white/60 dark:bg-gray-900/60 flex items-center justify-center z-10">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                      {isLoading ? 'Database loading...' : 'Connecting to database...'}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Editor Toolbar */}
             <div className="flex-shrink-0">
               <EditorToolbar
                 onRun={onRun}
+                onCancel={onCancel}
                 onClear={() => setContent('')}
                 onSave={() => setShowSaveModal(true)}
                 mode={activeDatabase}

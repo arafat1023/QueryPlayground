@@ -47,11 +47,22 @@ export function useGemini() {
     [service]
   );
 
+  const generateJSON = useCallback(
+    async (prompt: string) => {
+      if (!service) {
+        throw new Error('Missing API key.');
+      }
+      return service.generateJSON(prompt);
+    },
+    [service]
+  );
+
   return {
     apiKey,
     connectionStatus,
     lastError,
     testConnection,
     generateContent,
+    generateJSON,
   };
 }

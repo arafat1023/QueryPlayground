@@ -6,6 +6,7 @@ import { useGemini } from '@/hooks/useGemini';
 import { useSchema } from '@/hooks/useSchema';
 import { useUIStore } from '@/store/uiStore';
 import { usePracticeStore } from '@/store/practiceStore';
+import { isSafeQuery } from '@/utils/querySafety';
 import { buildPracticePrompt } from '@/services/practicePrompts';
 import type { PracticeDifficulty, PracticeQuestion } from '@/types/practice';
 import type { DatabaseMode } from '@/types/editor';
@@ -15,17 +16,6 @@ interface QuestionGeneratorProps {
 }
 
 const DEFAULT_COUNT = 5;
-
-const isSafeExpectedQuery = (query: string, database: DatabaseMode): boolean => {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return false;
-
-  if (database === 'postgresql') {
-    return normalized.startsWith('select') || normalized.startsWith('with');
-  }
-
-  return /db\.[a-z0-9_]+\.(find|findone|aggregate)\s*\(/i.test(query);
-};
 
 const fallbackHints = [
   'Review the schema to find the right fields.',
@@ -38,35 +28,43 @@ const parseQuestionResponse = (
   database: DatabaseMode,
   difficulty: PracticeDifficulty
 ): PracticeQuestion[] => {
+  // Try to extract JSON from markdown code blocks first
   const jsonBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const rawJson = jsonBlockMatch?.[1] ?? (() => {
+  let rawJson = jsonBlockMatch?.[1];
+
+  // Fallback: extract JSON between first { and last }
+  if (!rawJson) {
     const start = text.indexOf('{');
     const end = text.lastIndexOf('}');
-    if (start === -1 || end === -1 || end <= start) return '';
-    return text.slice(start, end + 1);
-  })();
+    if (start !== -1 && end !== -1 && end > start) {
+      rawJson = text.slice(start, end + 1);
+    }
+  }
 
   if (!rawJson) {
-    throw new Error('AI response did not contain JSON.');
+    console.error('[ParseError] AI response did not contain JSON:', text.slice(0, 500));
+    throw new Error('AI response did not contain valid JSON. The model may have returned text instead of JSON.');
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(rawJson);
   } catch (error) {
-    throw new Error('Failed to parse AI JSON response.');
+    console.error('[ParseError] Failed to parse JSON:', rawJson.slice(0, 500), error);
+    throw new Error(`Failed to parse AI JSON response. ${error instanceof Error ? error.message : 'Invalid JSON syntax.'}`);
   }
 
   if (!parsed || typeof parsed !== 'object' || !('questions' in parsed)) {
-    throw new Error('AI JSON response missing questions array.');
+    console.error('[ParseError] Parsed JSON missing questions array:', parsed);
+    throw new Error('AI JSON response is missing the "questions" array.');
   }
 
   const questions = (parsed as { questions: unknown[] }).questions;
   if (!Array.isArray(questions)) {
-    throw new Error('AI JSON response questions is not an array.');
+    throw new Error('AI JSON response "questions" is not an array.');
   }
 
-  return questions
+  const validQuestions = questions
     .map((item, index) => {
       const raw = item as Record<string, unknown>;
       const prompt = typeof raw.prompt === 'string' ? raw.prompt : '';
@@ -75,7 +73,8 @@ const parseQuestionResponse = (
       const id = typeof raw.id === 'string' ? raw.id : `q_${index + 1}`;
       const qDifficulty = (raw.difficulty as PracticeDifficulty) || difficulty;
 
-      if (!prompt || !expectedQuery || !isSafeExpectedQuery(expectedQuery, database)) {
+      if (!prompt || !expectedQuery || !isSafeQuery(expectedQuery, database)) {
+        console.warn(`[ParseWarning] Skipping invalid question ${id}:`, { prompt, expectedQuery, qDifficulty });
         return null;
       }
 
@@ -89,10 +88,16 @@ const parseQuestionResponse = (
       } satisfies PracticeQuestion;
     })
     .filter((question): question is PracticeQuestion => question !== null);
+
+  if (validQuestions.length === 0) {
+    throw new Error('No valid questions could be parsed from the AI response.');
+  }
+
+  return validQuestions;
 };
 
 export function QuestionGenerator({ onStartPractice }: QuestionGeneratorProps) {
-  const { generateContent, apiKey } = useGemini();
+  const { generateJSON, apiKey } = useGemini();
   const { data: schema, isLoading, error } = useSchema();
   const activeDatabase = useUIStore((state) => state.activeDatabase);
   const practiceStatus = usePracticeStore((state) => state.status);
@@ -133,7 +138,7 @@ export function QuestionGenerator({ onStartPractice }: QuestionGeneratorProps) {
         count,
       });
 
-      const response = await generateContent(prompt);
+      const response = await generateJSON(prompt);
       const parsedQuestions = parseQuestionResponse(response, activeDatabase, difficulty);
 
       if (parsedQuestions.length === 0) {

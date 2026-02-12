@@ -64,9 +64,8 @@ class GeminiService {
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2048,
-            ...options.generationConfig,
+            temperature: options.generationConfig?.temperature ?? 0.7,
+            maxOutputTokens: options.generationConfig?.maxOutputTokens ?? 2048,
           },
         }),
         signal: controller.signal,
@@ -108,6 +107,14 @@ class GeminiService {
     } finally {
       window.clearTimeout(timeoutId);
     }
+  }
+
+  /** Generate content with lower temperature for deterministic JSON output */
+  async generateJSON(prompt: string, options: Omit<GeminiRequestOptions, 'generationConfig'> = {}): Promise<string> {
+    return this.generateContent(prompt, {
+      ...options,
+      generationConfig: { temperature: 0, maxOutputTokens: 4096 },
+    });
   }
 
   async testConnection(): Promise<void> {

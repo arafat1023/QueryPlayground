@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { ChevronLeft, ChevronRight, CheckCircle2, XCircle, Lightbulb, SkipForward, Eye, Sparkles } from 'lucide-react';
 import { Modal } from '@/components/common/Modal';
 import { Button } from '@/components/common/Button';
@@ -8,6 +8,7 @@ import { useUIStore } from '@/store/uiStore';
 import { executePostgresQuery } from '@/db/postgres/client';
 import { executeMongoQuery } from '@/db/mongodb/client';
 import { PracticeResults } from './PracticeResults';
+import { isSafeQuery } from '@/utils/querySafety';
 import type { DatabaseMode } from '@/types/editor';
 import type { PracticeQuestion } from '@/types/practice';
 
@@ -21,17 +22,6 @@ interface ExecutionResult {
   rows: unknown[];
   error?: string;
 }
-
-const isSafeUserQuery = (query: string, database: DatabaseMode): boolean => {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return false;
-
-  if (database === 'postgresql') {
-    return normalized.startsWith('select') || normalized.startsWith('with');
-  }
-
-  return /db\.[a-z0-9_]+\.(find|findone|aggregate)\s*\(/i.test(query);
-};
 
 const stableStringify = (value: unknown): string => {
   if (value === null || typeof value !== 'object') {
@@ -116,7 +106,7 @@ export function PracticeMode({ isOpen, onClose }: PracticeModeProps) {
     return { total, answered };
   }, [questions, answers]);
 
-  const handleRunCheck = async () => {
+  const handleRunCheck = useCallback(async () => {
     if (!question || !activeDatabase) return;
     setLocalError(null);
 
@@ -126,7 +116,7 @@ export function PracticeMode({ isOpen, onClose }: PracticeModeProps) {
       return;
     }
 
-    if (!isSafeUserQuery(userQuery, activeDatabase)) {
+    if (!isSafeQuery(userQuery, activeDatabase)) {
       setLocalError('Only read-only queries are allowed in practice mode.');
       return;
     }
@@ -156,31 +146,31 @@ export function PracticeMode({ isOpen, onClose }: PracticeModeProps) {
     } finally {
       setIsChecking(false);
     }
-  };
+  }, [question, activeDatabase, answer, markAnswerStatus]);
 
-  const handleRevealHint = () => {
+  const handleRevealHint = useCallback(() => {
     if (!question) return;
-    revealHint(question.id, question.hints.length || 3);
-  };
+    revealHint(question.id);
+  }, [question, revealHint]);
 
-  const handleToggleSolution = () => {
+  const handleToggleSolution = useCallback(() => {
     if (!question || !answer) return;
     toggleSolution(question.id, !answer.showSolution);
-  };
+  }, [question, answer, toggleSolution]);
 
-  const handleSkip = () => {
+  const handleSkip = useCallback(() => {
     if (!question) return;
     skipQuestion(question.id);
     nextQuestion();
-  };
+  }, [question, skipQuestion, nextQuestion]);
 
-  const handleFinish = () => {
+  const handleFinish = useCallback(() => {
     completeSession();
-  };
+  }, [completeSession]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     onClose();
-  };
+  }, [onClose]);
 
   useEffect(() => {
     const nextDatabase = question?.database ?? database;

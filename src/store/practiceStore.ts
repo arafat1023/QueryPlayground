@@ -29,7 +29,7 @@ interface PracticeState {
   setAnswerQuery: (questionId: string, query: string) => void;
   updateAnswer: (questionId: string, patch: Partial<PracticeAnswer>) => void;
   markAnswerStatus: (questionId: string, status: PracticeAnswerStatus, feedback?: string | null) => void;
-  revealHint: (questionId: string, maxHints?: number) => void;
+  revealHint: (questionId: string) => void;
   toggleSolution: (questionId: string, show: boolean) => void;
   nextQuestion: () => void;
   prevQuestion: () => void;
@@ -144,8 +144,10 @@ export const usePracticeStore = create<PracticeState>()(
         }));
       },
 
-      revealHint: (questionId, maxHints = 3) => {
+      revealHint: (questionId) => {
         set((state) => {
+          const question = state.questions.find((q) => q.id === questionId);
+          const maxHints = question?.hints.length || 3;
           const current = state.answers[questionId] ?? createEmptyAnswer();
           return {
             answers: {

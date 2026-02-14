@@ -11,10 +11,6 @@ interface EditorState {
   // Current query content (synced with active tab)
   content: string;
 
-  // Per-database drafts to preserve content when switching
-  pgDraft: string;
-  mongoDraft: string;
-
   // Track dirty state (content differs from last saved/loaded)
   isDirty: boolean;
   lastSavedContent: string;
@@ -59,6 +55,8 @@ const createInitialTab = (): EditorTab => ({
   content: getDefaultQuery('postgresql'),
   database: 'postgresql',
   isDirty: false,
+  pgDraft: getDefaultQuery('postgresql'),
+  mongoDraft: getDefaultQuery('mongodb'),
 });
 
 export const useEditorStore = create<EditorState>()(
@@ -69,8 +67,6 @@ export const useEditorStore = create<EditorState>()(
       activeTabId: 'tab-1',
       tabCounter: 1,
       content: getDefaultQuery('postgresql'),
-      pgDraft: getDefaultQuery('postgresql'),
-      mongoDraft: getDefaultQuery('mongodb'),
       isDirty: false,
       lastSavedContent: getDefaultQuery('postgresql'),
       settings: DEFAULT_SETTINGS,
@@ -121,20 +117,24 @@ export const useEditorStore = create<EditorState>()(
         });
       },
 
-      // Save current content as draft for the given database mode
+      // Save current content as draft for the given database mode (per-tab)
       saveDraft: (mode: DatabaseMode) => {
-        const { content } = get();
-        if (mode === 'postgresql') {
-          set({ pgDraft: content });
-        } else {
-          set({ mongoDraft: content });
-        }
+        const { content, activeTabId, tabs } = get();
+        const draftKey = mode === 'postgresql' ? 'pgDraft' : 'mongoDraft';
+        set({
+          tabs: tabs.map(t =>
+            t.id === activeTabId ? { ...t, [draftKey]: content } : t
+          ),
+        });
       },
 
-      // Restore draft for the given database mode
+      // Restore draft for the given database mode (per-tab)
       restoreDraft: (mode: DatabaseMode) => {
-        const { pgDraft, mongoDraft, activeTabId, tabs } = get();
-        const draft = mode === 'postgresql' ? pgDraft : mongoDraft;
+        const { activeTabId, tabs } = get();
+        const activeTab = tabs.find(t => t.id === activeTabId);
+        const draft = mode === 'postgresql'
+          ? (activeTab?.pgDraft ?? getDefaultQuery('postgresql'))
+          : (activeTab?.mongoDraft ?? getDefaultQuery('mongodb'));
         set({
           content: draft,
           isDirty: false,
@@ -170,6 +170,8 @@ export const useEditorStore = create<EditorState>()(
           content: getDefaultQuery(db),
           database: db,
           isDirty: false,
+          pgDraft: getDefaultQuery('postgresql'),
+          mongoDraft: getDefaultQuery('mongodb'),
         };
         // Save current tab state before switching
         set({
@@ -251,9 +253,14 @@ export const useEditorStore = create<EditorState>()(
       name: 'qp_editor',
       merge: (persistedState: unknown, currentState: EditorState): EditorState => {
         // Default shallow merge (persistedState only has data keys, no functions)
-        const merged = { ...currentState, ...(persistedState as Partial<EditorState>) };
+        const persisted = persistedState as Record<string, unknown>;
+        const merged = { ...currentState, ...persisted };
 
-        // Migration: create initial tab if none exist (upgrading from pre-tabs version)
+        // If localStorage still has root-level pgDraft/mongoDraft (from before per-tab drafts), migrate them into tabs
+        const globalPg = typeof persisted.pgDraft === 'string' ? persisted.pgDraft : undefined;
+        const globalMongo = typeof persisted.mongoDraft === 'string' ? persisted.mongoDraft : undefined;
+
+        // Create initial tab if none exist (upgrading from pre-tabs version)
         if (!Array.isArray(merged.tabs) || merged.tabs.length === 0) {
           const tab: EditorTab = {
             id: 'tab-1',
@@ -261,13 +268,26 @@ export const useEditorStore = create<EditorState>()(
             content: typeof merged.content === 'string' ? merged.content : getDefaultQuery('postgresql'),
             database: 'postgresql' as DatabaseMode,
             isDirty: false,
+            pgDraft: globalPg ?? getDefaultQuery('postgresql'),
+            mongoDraft: globalMongo ?? getDefaultQuery('mongodb'),
           };
           merged.tabs = [tab];
           merged.activeTabId = 'tab-1';
           merged.tabCounter = 1;
+        } else if (globalPg || globalMongo) {
+          // Move root-level drafts into each tab that doesn't have its own yet
+          merged.tabs = (merged.tabs as EditorTab[]).map((t: EditorTab) => ({
+            ...t,
+            pgDraft: t.pgDraft ?? globalPg ?? getDefaultQuery('postgresql'),
+            mongoDraft: t.mongoDraft ?? globalMongo ?? getDefaultQuery('mongodb'),
+          }));
         }
 
-        return merged;
+        // Remove root-level draft keys now that they live per-tab
+        delete (merged as Record<string, unknown>).pgDraft;
+        delete (merged as Record<string, unknown>).mongoDraft;
+
+        return merged as EditorState;
       },
     }
   )

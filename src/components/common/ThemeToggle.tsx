@@ -1,7 +1,6 @@
 import { Moon, Sun } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
 import { Tooltip } from '@/components/common/Tooltip';
-import { useState, useEffect } from 'react';
 
 interface ThemeToggleProps {
   className?: string;
@@ -10,12 +9,6 @@ interface ThemeToggleProps {
 export function ThemeToggle({ className = '' }: ThemeToggleProps) {
   const { theme, toggleTheme } = useUIStore();
   const isDark = theme === 'dark';
-  const [animKey, setAnimKey] = useState(0);
-
-  // Bump key on toggle to re-trigger the CSS animation
-  useEffect(() => {
-    setAnimKey((k) => k + 1);
-  }, [theme]);
 
   return (
     <Tooltip label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
@@ -30,7 +23,7 @@ export function ThemeToggle({ className = '' }: ThemeToggleProps) {
         `}
         aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       >
-        <span key={animKey} className="theme-icon-enter inline-flex">
+        <span key={theme} className="theme-icon-enter inline-flex">
           {isDark ? (
             <Sun className="w-5 h-5 text-yellow-500" />
           ) : (

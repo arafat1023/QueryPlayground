@@ -54,8 +54,7 @@ function App() {
   // Clear results when switching tabs
   useEffect(() => {
     clearResult();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTabId]);
+  }, [activeTabId, clearResult]);
 
   // Run query
   const runQuery = useCallback(async () => {

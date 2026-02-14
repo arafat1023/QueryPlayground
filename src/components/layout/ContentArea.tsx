@@ -39,8 +39,7 @@ export function ContentArea({ isRunning, result, onRun, onCancel, isReady, isLoa
         setActiveDatabase(activeTab.database);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTabId]);
+  }, [activeTabId, tabs, activeDatabase, setActiveDatabase]);
 
   // Debounce the resize handler to prevent excessive re-renders/storage updates
   const handlePanelResize = useMemo(

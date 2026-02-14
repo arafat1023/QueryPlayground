@@ -262,11 +262,20 @@ export const useEditorStore = create<EditorState>()(
 
         // Create initial tab if none exist (upgrading from pre-tabs version)
         if (!Array.isArray(merged.tabs) || merged.tabs.length === 0) {
+          const content = typeof merged.content === 'string'
+            ? merged.content
+            : getDefaultQuery('postgresql');
+          const trimmedContent = content.trim().toLowerCase();
+          const isLikelyMongo =
+            trimmedContent.startsWith('db.') ||
+            trimmedContent.startsWith('use(') ||
+            trimmedContent.includes('.aggregate(') ||
+            trimmedContent.includes('.find(');
           const tab: EditorTab = {
             id: 'tab-1',
             name: 'Query 1',
-            content: typeof merged.content === 'string' ? merged.content : getDefaultQuery('postgresql'),
-            database: 'postgresql' as DatabaseMode,
+            content,
+            database: (isLikelyMongo ? 'mongodb' : 'postgresql') as DatabaseMode,
             isDirty: false,
             pgDraft: globalPg ?? getDefaultQuery('postgresql'),
             mongoDraft: globalMongo ?? getDefaultQuery('mongodb'),

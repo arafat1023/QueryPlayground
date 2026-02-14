@@ -1,5 +1,6 @@
-import { useEffect, useCallback, useState, useRef } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { X } from 'lucide-react';
+import { useAnimatedMount } from '@/hooks/useAnimatedMount';
 
 type ModalSize = 'sm' | 'md' | 'lg' | 'xl';
 
@@ -26,7 +27,8 @@ const sizeStyles: Record<ModalSize, string> = {
  * - Escape key to close
  * - Body scroll prevention when open
  * - Backdrop click to close
- * - Focus trap on first focusable element
+ * - Focus trap cycling Tab within modal
+ * - Focus restoration to previously focused element on close
  */
 export function Modal({
   isOpen,
@@ -37,9 +39,9 @@ export function Modal({
   showCloseButton = true,
   closeOnBackdrop = true,
 }: ModalProps) {
-  const [mounted, setMounted] = useState(false);
-  const [animState, setAnimState] = useState<'enter' | 'visible' | 'exit'>('enter');
+  const { mounted, animState } = useAnimatedMount(isOpen, 150);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
   // Handle escape key press
   const handleEscape = useCallback(
@@ -51,35 +53,56 @@ export function Modal({
     [isOpen, onClose]
   );
 
-  // Mount/unmount with animation
+  // Focus management: save previous focus, focus dialog, restore on unmount
   useEffect(() => {
-    if (isOpen) {
-      setMounted(true);
-      setAnimState('enter');
-      // Trigger visible state after a frame for CSS transition
-      const raf = requestAnimationFrame(() => {
-        setAnimState('visible');
-      });
-      return () => cancelAnimationFrame(raf);
-    } else if (mounted) {
-      setAnimState('exit');
-      const timer = setTimeout(() => {
-        setMounted(false);
-      }, 150); // Match exit transition duration
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!mounted) return;
 
-  // Add/remove event listeners & manage scroll lock
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+
+    return () => {
+      previouslyFocusedRef.current?.focus();
+    };
+  }, [mounted]);
+
+  // Focus trap: cycle Tab within modal
+  useEffect(() => {
+    if (!mounted) return;
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) {
+        e.preventDefault();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleTabKey);
+    return () => document.removeEventListener('keydown', handleTabKey);
+  }, [mounted]);
+
+  // Escape key & scroll lock
   useEffect(() => {
     if (!mounted) return;
 
     const originalOverflow = document.body.style.overflow;
     document.addEventListener('keydown', handleEscape);
     document.body.style.overflow = 'hidden';
-
-    // Focus the dialog on mount
-    dialogRef.current?.focus();
 
     return () => {
       document.removeEventListener('keydown', handleEscape);

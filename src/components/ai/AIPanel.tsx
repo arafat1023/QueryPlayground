@@ -7,6 +7,7 @@ import { QueryExplainer } from './QueryExplainer';
 import { NLToQuery } from './NLToQuery';
 import { AnswerValidator } from './AnswerValidator';
 import { HintPanel } from './HintPanel';
+import { useAnimatedMount } from '@/hooks/useAnimatedMount';
 
 interface AIPanelProps {
   isOpen: boolean;
@@ -25,27 +26,8 @@ const AI_TABS: { id: AITab; label: string; Icon: typeof Dumbbell }[] = [
 
 export function AIPanel({ isOpen, onClose, onStartPractice }: AIPanelProps) {
   const apiKey = useAIStore((state) => state.apiKey);
-  const [mounted, setMounted] = useState(false);
-  const [animState, setAnimState] = useState<'enter' | 'visible' | 'exit'>('enter');
+  const { mounted, animState } = useAnimatedMount(isOpen);
   const [activeTab, setActiveTab] = useState<AITab>('practice');
-
-  // Animation mount/unmount
-  useEffect(() => {
-    if (isOpen) {
-      setMounted(true);
-      setAnimState('enter');
-      const raf = requestAnimationFrame(() => {
-        setAnimState('visible');
-      });
-      return () => cancelAnimationFrame(raf);
-    } else if (mounted) {
-      setAnimState('exit');
-      const timer = setTimeout(() => {
-        setMounted(false);
-      }, 200);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Escape key to close
   const handleEscape = useCallback(

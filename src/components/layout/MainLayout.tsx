@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Panel, Group, Separator } from 'react-resizable-panels';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
@@ -6,6 +6,7 @@ import { ContentArea } from './ContentArea';
 import { StatusBar } from './StatusBar';
 import { useUIStore } from '@/store/uiStore';
 import { debounce } from '@/utils/debounce';
+import { useAnimatedMount } from '@/hooks/useAnimatedMount';
 import type { DatabaseMode } from '@/types/editor';
 import type { QueryResult } from '@/types';
 
@@ -118,25 +119,7 @@ export function MainLayout({
 
 function MobileSidebar({ onResetToDefault }: { onResetToDefault?: () => void }) {
   const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
-  const [mounted, setMounted] = useState(false);
-  const [animState, setAnimState] = useState<'enter' | 'visible' | 'exit'>('enter');
-
-  useEffect(() => {
-    if (!sidebarCollapsed) {
-      setMounted(true);
-      setAnimState('enter');
-      const raf = requestAnimationFrame(() => {
-        setAnimState('visible');
-      });
-      return () => cancelAnimationFrame(raf);
-    } else if (mounted) {
-      setAnimState('exit');
-      const timer = setTimeout(() => {
-        setMounted(false);
-      }, 200);
-      return () => clearTimeout(timer);
-    }
-  }, [sidebarCollapsed]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { mounted, animState } = useAnimatedMount(!sidebarCollapsed);
 
   if (!mounted) return null;
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Clock, Table2, Code, Download, Copy, Braces } from 'lucide-react';
+import { Clock, Table2, Code, Download, Copy, Braces, Search } from 'lucide-react';
 import { copyTableAsCSV, copyTableAsJSON, exportToCSV, exportToJSON } from '@/utils/exportUtils';
 import { toast } from 'sonner';
 
@@ -25,6 +25,8 @@ export function ResultsToolbar({
   onViewModeChange,
   rows = [],
   isMongoDB = false,
+  filterValue,
+  onFilterChange,
 }: ResultsToolbarProps) {
   const [showExportMenu, setShowExportMenu] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
@@ -96,6 +98,20 @@ export function ResultsToolbar({
             {executionTime.toFixed(0)}ms
           </span>
         </div>
+
+        {onFilterChange && rows.length > 0 && !isMongoDB && viewMode === 'table' && (
+          <div className="relative flex items-center">
+            <Search className="w-3 h-3 absolute left-2 text-gray-400 dark:text-gray-500 pointer-events-none" />
+            <input
+              type="text"
+              value={filterValue ?? ''}
+              onChange={(e) => onFilterChange(e.target.value)}
+              placeholder="Filter rows..."
+              className="pl-7 pr-2 py-1 text-xs w-36 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              aria-label="Filter results"
+            />
+          </div>
+        )}
       </div>
 
       {/* Right side: View toggle and export buttons */}

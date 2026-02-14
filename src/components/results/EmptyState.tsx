@@ -14,10 +14,9 @@ export function EmptyState({ type, databaseType = 'postgresql' }: EmptyStateProp
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    if (type !== 'loading') {
-      setElapsed(0);
-      return;
-    }
+    if (type !== 'loading') return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setElapsed(0);
     const start = Date.now();
     const interval = setInterval(() => {
       setElapsed((Date.now() - start) / 1000);

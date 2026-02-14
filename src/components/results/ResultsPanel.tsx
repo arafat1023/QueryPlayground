@@ -26,11 +26,12 @@ export function ResultsPanel({ result, isRunning }: ResultsPanelProps) {
   const [resultsFilter, setResultsFilter] = useState('');
 
   // Reset view mode when database changes
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setViewMode('table');
     setDismissedError(false);
   }, [activeDatabase]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Handle loading state
   if (isRunning) {

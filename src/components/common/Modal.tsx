@@ -1,5 +1,6 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { X } from 'lucide-react';
+import { useAnimatedMount } from '@/hooks/useAnimatedMount';
 
 type ModalSize = 'sm' | 'md' | 'lg' | 'xl';
 
@@ -10,6 +11,7 @@ interface ModalProps {
   children: React.ReactNode;
   size?: ModalSize;
   showCloseButton?: boolean;
+  closeOnBackdrop?: boolean;
 }
 
 const sizeStyles: Record<ModalSize, string> = {
@@ -21,9 +23,12 @@ const sizeStyles: Record<ModalSize, string> = {
 
 /**
  * Reusable modal component with accessibility features
+ * - Fade + scale enter/exit transitions
  * - Escape key to close
  * - Body scroll prevention when open
  * - Backdrop click to close
+ * - Focus trap cycling Tab within modal
+ * - Focus restoration to previously focused element on close
  */
 export function Modal({
   isOpen,
@@ -32,7 +37,12 @@ export function Modal({
   children,
   size = 'md',
   showCloseButton = true,
+  closeOnBackdrop = true,
 }: ModalProps) {
+  const { mounted, animState } = useAnimatedMount(isOpen, 150);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+
   // Handle escape key press
   const handleEscape = useCallback(
     (event: KeyboardEvent) => {
@@ -43,40 +53,96 @@ export function Modal({
     [isOpen, onClose]
   );
 
-  // Add/remove event listeners
+  // Focus management: save previous focus, focus dialog, restore on unmount
   useEffect(() => {
-    if (!isOpen) return;
+    if (!mounted) return;
+
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+
+    return () => {
+      previouslyFocusedRef.current?.focus();
+    };
+  }, [mounted]);
+
+  // Focus trap: cycle Tab within modal
+  useEffect(() => {
+    if (!mounted) return;
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable.length === 0) {
+        e.preventDefault();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleTabKey);
+    return () => document.removeEventListener('keydown', handleTabKey);
+  }, [mounted]);
+
+  // Escape key & scroll lock
+  useEffect(() => {
+    if (!mounted) return;
 
     const originalOverflow = document.body.style.overflow;
     document.addEventListener('keydown', handleEscape);
-    // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      // Restore body scroll to its original value
       document.body.style.overflow = originalOverflow;
     };
-  }, [isOpen, handleEscape]);
+  }, [mounted, handleEscape]);
 
-  // Don't render anything if modal is closed
-  if (!isOpen) return null;
+  if (!mounted) return null;
+
+  const backdropClass =
+    animState === 'enter'
+      ? 'modal-backdrop-enter'
+      : animState === 'visible'
+        ? 'modal-backdrop-visible'
+        : 'modal-backdrop-exit';
+
+  const contentClass =
+    animState === 'enter'
+      ? 'modal-content-enter'
+      : animState === 'visible'
+        ? 'modal-content-visible'
+        : 'modal-content-exit';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
+        className={`absolute inset-0 bg-black/50 backdrop-blur-sm ${backdropClass}`}
+        onClick={closeOnBackdrop ? onClose : undefined}
         aria-hidden="true"
       />
 
       {/* Modal Content */}
       <div
-        className={`relative bg-white dark:bg-gray-900 rounded-lg shadow-xl ${sizeStyles[size]} w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col`}
+        ref={dialogRef}
+        className={`relative bg-white dark:bg-gray-900 rounded-lg shadow-xl ${sizeStyles[size]} w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col ${contentClass}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
+        tabIndex={-1}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">

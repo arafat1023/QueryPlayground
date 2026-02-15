@@ -19,7 +19,7 @@ export function ResetConfirmModal({ isOpen, onClose, onConfirm, isLoading = fals
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Reset to Default Data" size="sm">
+    <Modal isOpen={isOpen} onClose={onClose} title="Reset to Default Data" size="sm" closeOnBackdrop={false}>
       <div className="space-y-4">
         {/* Warning Message */}
         <div className="flex items-start gap-3 bg-red-50 dark:bg-red-900/20 rounded-lg p-3 border border-red-200 dark:border-red-800">

@@ -39,6 +39,16 @@ export interface SavedQuery {
   updatedAt: number;
 }
 
+export interface EditorTab {
+  id: string;
+  name: string;
+  content: string;
+  database: DatabaseMode;
+  isDirty: boolean;
+  pgDraft?: string;
+  mongoDraft?: string;
+}
+
 export interface QueryEditorProps {
   mode: DatabaseMode;
   value: string;
@@ -47,10 +57,12 @@ export interface QueryEditorProps {
   height?: string | number;
   readOnly?: boolean;
   theme?: EditorTheme;
+  errorLine?: number;
 }
 
 export interface EditorToolbarProps {
   onRun: () => void;
+  onCancel?: () => void;
   onClear: () => void;
   onSave?: () => void;
   isRunning?: boolean;

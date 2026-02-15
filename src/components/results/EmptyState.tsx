@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Play, Database, Sparkles } from 'lucide-react';
 
 interface EmptyStateProps {
@@ -10,6 +11,19 @@ interface EmptyStateProps {
  * Shows different states: no query run, no results, or loading
  */
 export function EmptyState({ type, databaseType = 'postgresql' }: EmptyStateProps) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (type !== 'loading') return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setElapsed(0);
+    const start = Date.now();
+    const interval = setInterval(() => {
+      setElapsed((Date.now() - start) / 1000);
+    }, 100);
+    return () => clearInterval(interval);
+  }, [type]);
+
   if (type === 'loading') {
     return (
       <div className="flex items-center justify-center h-full">
@@ -18,7 +32,9 @@ export function EmptyState({ type, databaseType = 'postgresql' }: EmptyStateProp
             <div className="w-12 h-12 border-4 border-gray-200 dark:border-gray-700 border-t-blue-500 rounded-full animate-spin" />
             <Database className="w-5 h-5 text-blue-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Running query...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Running query... ({elapsed.toFixed(1)}s)
+          </p>
         </div>
       </div>
     );
@@ -29,7 +45,7 @@ export function EmptyState({ type, databaseType = 'postgresql' }: EmptyStateProp
       <div className="flex items-center justify-center h-full">
         <div className="flex flex-col items-center gap-3 text-center max-w-sm px-4">
           <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full">
-            <Sparkles className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+            <Sparkles className="w-8 h-8 text-gray-400 dark:text-gray-400" />
           </div>
           <div>
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -62,7 +78,7 @@ export function EmptyState({ type, databaseType = 'postgresql' }: EmptyStateProp
               : 'Write a MongoDB query to explore your data.'}
           </p>
 
-          <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-500">
+          <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
             <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded font-mono">
               Ctrl
             </kbd>

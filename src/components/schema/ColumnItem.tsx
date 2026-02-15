@@ -76,7 +76,7 @@ export function ColumnItem({ column, dbType, onClick }: ColumnItemProps) {
       title={column.name}
     >
       {/* Key icon for all columns */}
-      <Key className="w-3 h-3 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+      <Key className="w-3 h-3 text-gray-400 dark:text-gray-400 flex-shrink-0" />
 
       {/* Column name */}
       <span className="flex-1 truncate font-mono text-gray-700 dark:text-gray-300">
@@ -118,9 +118,9 @@ export function ColumnItem({ column, dbType, onClick }: ColumnItemProps) {
 export function ColumnItemSkeleton() {
   return (
     <div className="flex items-center gap-2 px-2 py-1">
-      <div className="w-3 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-      <div className="flex-1 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-      <div className="w-12 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+      <div className="w-3 h-3 bg-gray-200 dark:bg-gray-700 rounded skeleton-pulse" />
+      <div className="flex-1 h-3 bg-gray-200 dark:bg-gray-700 rounded skeleton-pulse" />
+      <div className="w-12 h-3 bg-gray-200 dark:bg-gray-700 rounded skeleton-pulse" />
     </div>
   );
 }

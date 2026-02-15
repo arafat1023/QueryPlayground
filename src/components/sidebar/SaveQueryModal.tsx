@@ -23,6 +23,7 @@ export function SaveQueryModal({ isOpen, onClose, query, database }: SaveQueryMo
 
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setName('');
     }
   }, [isOpen]);

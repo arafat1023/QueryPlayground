@@ -55,7 +55,7 @@ export function ErrorDisplay({ error, onDismiss }: ErrorDisplayProps) {
   const parsed = parseError(errorMessage);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-4">
+    <div className="flex flex-col items-center justify-center h-full p-4" role="alert">
       <div className="max-w-2xl w-full">
         <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
           <div className="flex items-start gap-3">

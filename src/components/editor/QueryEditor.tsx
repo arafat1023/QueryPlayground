@@ -31,9 +31,11 @@ export function QueryEditor({
   height = '400px',
   readOnly = false,
   theme = 'light',
+  errorLine,
 }: QueryEditorProps) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
+  const decorationsRef = useRef<string[]>([]);
 
   // Set up keyboard shortcuts
   useEditorKeyboard({editorRef, onRun});
@@ -90,6 +92,28 @@ export function QueryEditor({
     }
   }, [readOnly]);
 
+  // Highlight error line in editor
+  useEffect(() => {
+    if (!editorRef.current || !monacoRef.current) return;
+    const ed = editorRef.current;
+    const monaco = monacoRef.current;
+
+    if (errorLine && errorLine > 0) {
+      decorationsRef.current = ed.deltaDecorations(decorationsRef.current, [
+        {
+          range: new monaco.Range(errorLine, 1, errorLine, 1),
+          options: {
+            isWholeLine: true,
+            className: 'bg-red-100 dark:bg-red-900/30',
+            glyphMarginClassName: 'text-red-500',
+          },
+        },
+      ]);
+    } else {
+      decorationsRef.current = ed.deltaDecorations(decorationsRef.current, []);
+    }
+  }, [errorLine]);
+
   // Memoize editor options
   const editorOptions = useCallback(
     () => ({
@@ -109,6 +133,8 @@ export function QueryEditor({
       cursorStyle: 'line' as const,
       formatOnPaste: true,
       formatOnType: true,
+      accessibilitySupport: 'on' as const,
+      ariaLabel: 'Query editor',
     }),
     [readOnly]
   );
@@ -116,7 +142,7 @@ export function QueryEditor({
   const currentTheme = getThemeId(mode, theme);
 
   return (
-    <div className="h-full border border-gray-300 rounded-lg overflow-hidden">
+    <div className="h-full border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden">
       <Editor
         height={height}
         language={getLanguage()}
@@ -126,7 +152,7 @@ export function QueryEditor({
         theme={currentTheme}
         options={editorOptions()}
         loading={
-          <div className="flex items-center justify-center h-full bg-gray-100 text-gray-600">
+          <div className="flex items-center justify-center h-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
             Loading editor...
           </div>
         }
